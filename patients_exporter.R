@@ -10,8 +10,8 @@ if(!("tidyverse" %in% installed.packages()[,"Package"])) install.packages("tidyv
 require("tidyverse")
 
 # read file
-f <- data.frame(line = read_lines(imported_file_path))
-f <- mutate(f, fields = str_count(line, ";"))
+f <- data.frame(line = readr::read_lines(imported_file_path))
+f <- mutate(f, fields = stringr::str_count(line, ";"))
 
 # indentify patients
 f <- mutate(f, pt = fields == 0)
@@ -32,10 +32,10 @@ f <- group_by(f, pt, header) %>%
 # tokenization and verticalization
 f <- f %>%
   separate(line, as.character(1:250), sep = ";") %>% 
-  gather("position", "value", as.character(1:100), convert = TRUE) %>%
+  tidyr::gather("position", "value", as.character(1:100), convert = TRUE) %>%
   group_by(pt, position) %>% 
   summarise(value = paste(value, collapse = "!!!")) %>% 
-  separate(value, c("value", "header"), sep = "!!!") %>% 
+  tidyr::separate(value, c("value", "header"), sep = "!!!") %>% 
   filter(header != "NA", !is.na(header)) %>%
   arrange(pt, position)
 
@@ -54,13 +54,13 @@ f <- f %>%
 
 # avoid duplicates and horizontalize
 f <- f %>%
-  unite("variable", title, header) %>% 
+  tidyr::unite("variable", title, header) %>% 
   group_by(pt, variable) %>%
   mutate(multiple = row_number()) %>% 
   ungroup() %>% 
   mutate(variable = ifelse(multiple > 1, paste(variable, multiple, sep = "_"), variable)) %>%
   select(-position, -multiple) %>% 
-  spread(variable, value)
+  tidyr::spread(variable, value)
 
 # clean name for spss
 names(f) <- stringr::str_replace_all(names(f), ";|,|-| |\\(|\\)", "_") %>% strtrim(40)
