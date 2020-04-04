@@ -8,17 +8,17 @@ if(!("tidyverse" %in% installed.packages()[,"Package"])) install.packages("tidyv
 require("tidyverse")
 
 # read file
-lines <- readr::read_csv("report.csv", skip = 4, col_names = "line")
+rows <- readr::read_csv("report.csv", skip = 4, col_names = "line")
 
 # indentify tables
-lines <- mutate(lines, sep_n = stringr::str_count(line, ";"))
+rows <- mutate(rows, sep_n = stringr::str_count(line, ";"))
 
 # name tables
-lines <- mutate(lines, table = ifelse(sep_n == 0, line, NA)) %>% tidyr::fill(table)
-lines <- filter(lines, table != line) %>% select(-sep_n)
+rows <- mutate(rows, table = ifelse(sep_n == 0, line, NA)) %>% tidyr::fill(table)
+rows <- filter(rows, table != line) %>% select(-sep_n)
 
 # separate tables
-tables <- split(lines, lines$table)
+tables <- split(rows, rows$table)
 
 # separate columns
 tables <- purrr::map(tables, ~ tidyr::separate(., line, sep = ";",
