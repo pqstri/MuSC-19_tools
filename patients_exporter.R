@@ -1,7 +1,7 @@
 # this script exports the content from text file by providers
 
 # replace the string with the path of the export file
-setwd("~/Downloads/")
+setwd("~/path_to_export_file.csv")
 
 # install (if needed) or load libreries
 if(!("tidyverse" %in% installed.packages()[,"Package"])) install.packages("tidyverse")
@@ -27,6 +27,7 @@ f <- group_by(f, pt, header) %>%
   summarise(line = paste(line, collapse = ";"),
             fields = sum(fields))
 
+# tokenization and verticalization
 f <- f %>%
   separate(line, as.character(1:250), sep = ";") %>% 
   gather("position", "value", as.character(1:100), convert = TRUE) %>%
@@ -36,6 +37,7 @@ f <- f %>%
   filter(header != "NA", !is.na(header)) %>%
   arrange(pt, position)
 
+# include topic in variable name
 f <- f %>% 
   group_by(pt) %>% 
   mutate(blank = ifelse(value == "" & header == "", 1, 0)) %>% 
@@ -48,6 +50,7 @@ f <- f %>%
   select(-blank, -prev_blank) %>% 
   ungroup()
 
+# avoid duplicates and horizontalize
 f <- f %>%
   unite("variable", title, header) %>% 
   group_by(pt, variable) %>%
@@ -57,37 +60,14 @@ f <- f %>%
   select(-position, -multiple) %>% 
   spread(variable, value)
 
+# clean name for spss
+names(f) <- stringr::str_replace_all(names(f), ";|,|-| |\\(|\\)", "_") %>% strtrim(40)
+f <- stringr::str_replace_all(f, ";|,|-| ", "_")
 
+# save spss output in wd
+fname <- paste("musc19", format(Sys.time(), "_%d%b%Y"), ".sav", sep = "")
+haven::write_sav(f, fname)
 
-
-
-
-
-
-
-
-# separate tables
-tables <- split(lines, lines$table)
-
-# separate columns
-tables <- purrr::map(tables, ~ tidyr::separate(., line, sep = ";",
-                                               into = unlist(stringr::str_split(.$line[1], ";"))))
-
-# remove fake header lines
-tables <- purrr::map(tables, ~ filter(., row_number() > 1))
-
-# create a new data for converted files
-dir.create("tables", showWarnings = FALSE)
-
-# save tables
-purrr::map2(tables, names(tables), function(td, tn) {
-  names(td) <- stringr::str_replace_all(names(td), ";|,|-| |\\(|\\)", "_") %>% 
-    strtrim(40)
-  tn <- stringr::str_replace_all(tn, ";|,|-| ", "_")
-  fname <- paste("tables/", tn, ".sav", sep = "")
-  haven::write_sav(td, fname)
-  return("exported")
-})
 
 
 
