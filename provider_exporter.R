@@ -1,14 +1,16 @@
 # this script exports the content from text file by providers
+exported_file_folder <- ""
+imported_file_path <- ""
 
 # replace the string with the path of the export file
-setwd("~/path_to_export_file.csv")
+setwd(exported_file_folder)
 
 # install (if needed) or load libreries
 if(!("tidyverse" %in% installed.packages()[,"Package"])) install.packages("tidyverse")
 require("tidyverse")
 
 # read file
-rows <- readr::read_csv("report.csv", skip = 4, col_names = "line")
+rows <- readr::read_csv(imported_file_path, skip = 4, col_names = "line")
 
 # indentify tables
 rows <- mutate(rows, sep_n = stringr::str_count(line, ";"))

@@ -1,14 +1,16 @@
 # this script exports the content from text file by providers
+exported_file_folder <- ""
+imported_file_path <- ""
 
 # replace the string with the path of the export file
-setwd("~/path_to_export_file.csv")
+setwd(exported_file_folder)
 
 # install (if needed) or load libreries
 if(!("tidyverse" %in% installed.packages()[,"Package"])) install.packages("tidyverse")
 require("tidyverse")
 
 # read file
-f <- data.frame(line = read_lines("report-4.csv"))
+f <- data.frame(line = read_lines(imported_file_path))
 f <- mutate(f, fields = str_count(line, ";"))
 
 # indentify patients
