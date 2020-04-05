@@ -1,6 +1,6 @@
 # this script exports the content from text file by providers
-exported_file_folder <- ""
-imported_file_path <- ""
+exported_file_folder <- "~/Downloads/"
+imported_file_path <- "~/Downloads/report-4.csv"
 
 # replace the string with the path of the export file
 setwd(exported_file_folder)
@@ -63,8 +63,10 @@ f <- f %>%
   tidyr::spread(variable, value)
 
 # clean name for spss
-names(f) <- stringr::str_replace_all(names(f), ";|,|-| |\\(|\\)", "_") %>% strtrim(40)
-f <- stringr::str_replace_all(f, ";|,|-| ", "_")
+names(f) <- stringr::str_replace_all(names(f), ";|,|-| |\\(|\\)|\\.|\\\\|\\/|\\+", "_") %>% 
+  strtrim(40) %>% make.unique("_")
+# f <- mutate_all(f, ~ stringr::str_replace_all(., ";|,|-| |:|/", "_"))
+
 
 # save spss output in wd
 fname <- paste("musc19", format(Sys.time(), "_%d%b%Y"), ".sav", sep = "")
