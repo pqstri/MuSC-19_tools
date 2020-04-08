@@ -30,7 +30,8 @@ MPS_format <- list(
                 "COVID 19 - Laboratory data_HEMOGLOBIN",
                 "COVID 19 - Laboratory data_PaO2/FiO2"),
   
-  provider_blacklist = c("Base_Provider"),
+  provider_blacklist = c("Francesca", "Fake", "Nicolo’ Di Tullio",
+                         "Marta Ponzano", "temp"),
   
   # format converter
   var_dictionary = c(
@@ -170,7 +171,8 @@ f <- data.frame(line = readr::read_lines(imported_file_path))
 f <- mutate(f, fields = stringr::str_count(line, ";"))
 
 # indentify patients
-f <- mutate(f, pt = fields == 0)
+new_patient_tag <- "Provider;Patient;Sex;Created at;Updated at"
+f <- mutate(f, pt = line == new_patient_tag)
 
 # name patients
 f <- mutate(f, pt = cumsum(pt)) %>%
@@ -180,9 +182,24 @@ f <- mutate(f, pt = cumsum(pt)) %>%
 f <- mutate(f, is_header = map_lgl(line, ~ any(str_detect(., headers))))
 
 # identify multiple objects
-f <- f %>% group_by(pt) %>% mutate(block = cumsum(is_header)) %>% 
-  group_by(pt, block) %>% mutate(sheets = n()) %>% 
-  mutate(multiplier = ifelse(is_header & sheets > 2, sheets-1, 1)) %>% 
+f <- f %>% group_by(pt) %>% 
+  mutate(block = cumsum(is_header)) %>% 
+  group_by(pt, block) %>% 
+  
+  # \n bug
+  mutate(newline = str_count(line, "\"") %% 2) %>% 
+  mutate(newline_open = cumsum(newline) %% 2) %>% 
+  mutate(newline = as.numeric(newline == 1 | newline_open == 1)) %>% 
+  group_by(pt, block, is_header, newline) %>% 
+  
+  # continue
+  group_by(pt, block) %>% 
+  mutate(sheets = n()) %>% 
+  
+  mutate(newline_penalty = ifelse(is_header & any(newline), sum(newline)-1, 0)) %>%
+  group_by(pt, block) %>%
+  mutate(multiplier = ifelse(is_header & sheets > 2, sheets-1-newline_penalty, 1)) %>%
+  
   uncount(multiplier) %>% 
   ungroup()
 
@@ -192,10 +209,12 @@ f <- group_by(f, pt, is_header) %>%
             fields = sum(fields))
 
 # integrity check
-all(f %>% group_by(pt) %>% summarise(ok = all(fields == fields[1])) %>% .$ok)
+f %>% group_by(pt) %>% summarise(ok = all(fields == fields[1])) %>% 
+  filter(!ok) %>% .$pt
 
 # fix the ";" bug
 reimport <- function(line) {
+  cat("--> handling errors on: ", line, "\n\n")
   read.csv2(text = line, header = FALSE) %>% 
     gather("k", "v") %>% 
     mutate(v = ifelse(is.na(v), "", v)) %>% 
@@ -210,12 +229,12 @@ f <- f %>%
   ungroup()
 
 # integrity check
-all(f %>% group_by(pt) %>% summarise(ok = all(fields == fields[1])) %>% .$ok)
-
+f %>% group_by(pt) %>% summarise(ok = all(fields == fields[1])) %>% 
+  filter(!ok) %>% .$pt
 
 # tokenization and verticalization
 max_length <- 300
-f <- f %>%
+f <- f2 %>%
   mutate(ambiguous_separator = ifelse(grepl("\".*\"", line), 0, 1)) %>% 
   separate(line, as.character(1:max_length), sep = ";") %>% 
   tidyr::gather("position", "value", as.character(1:max_length), convert = TRUE) %>%
@@ -313,8 +332,12 @@ selected_col <- intersect(selected_col, names(f))
 col_index <- which(MPS_format$var_dictionary %in% names(f))
 
 # rename columns
-export <- select(f, selected_col) %>% 
+export <- f %>% 
+  filter(!(Base_Provider %in% MPS_format$provider_blacklist)) %>%
+  select(selected_col) %>% 
   rename(MPS_format$var_dictionary[col_index])
+
+
 
 # save spss output
 haven::write_sav(export, fname)
