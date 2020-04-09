@@ -32,8 +32,11 @@ MPS_format <- list(
                 "COVID 19 - Laboratory data_HEMOGLOBIN",
                 "COVID 19 - Laboratory data_PaO2/FiO2"),
   
+  staff = c("Francesca", "Nicolo’ Di Tullio",
+            "Marta Ponzano", "Irene Schiavetti"),
+  
   provider_blacklist = c("Francesca", "Fake", "Nicolo’ Di Tullio",
-                         "Marta Ponzano", "temp"),
+                         "Marta Ponzano", "temp", "Irene Schiavetti"),
   
   # format converter
   var_dictionary = c(
@@ -349,12 +352,38 @@ clean <- function(data) {
 #   strtrim(40) %>% make.unique("_")
 # f <- mutate_all(f, ~ stringr::str_replace_all(., ";|,|-| |:|/", "_"))
 
+#############################
+# Summary
+#############################
+
+enrollment_summary <- function(data) {
+  data %>% 
+    filter(!(`Demography_Site Code` %in% c("", "00"))) %>% 
+    count(Base_Provider,
+        Demography_Country,
+        `Demography_Site Code`,
+        sort = TRUE)
+}
+
+enrollment_summary_detail <- function(data) {
+  data %>% 
+    filter(!(`Demography_Site Code` %in% c("", "00"))) %>% 
+    select(Base_Provider,
+           Demography_Country,
+           `Demography_Site Code`,
+           `Demography_Patient Code`,
+           `Base_Created at`) %>% 
+    arrange(Demography_Country, 
+            `Demography_Site Code`, 
+            `Demography_Patient Code`,
+            `Base_Created at`)
+}
 
 #############################
 # Export
 #############################
 
-prepare_export <- function(f) {
+prepare_export <- function(f, staff = FALSE) {
   # name of the exported file
   fname <- paste("musc19", format(Sys.time(), "_%d%b%Y"), ".sav", sep = "")
   
@@ -364,9 +393,16 @@ prepare_export <- function(f) {
   col_index <- which(MPS_format$var_dictionary %in% names(f))
   
   # rename columns and take white list
-  export <- f %>% 
-    filter(!(Base_Provider %in% MPS_format$provider_blacklist)) %>%
-    select(selected_col) %>% 
+  export_real <- f %>% 
+    filter(!(Base_Provider %in% MPS_format$provider_blacklist))
+  
+  export_staff <- f %>% 
+    filter(Base_Provider %in% MPS_format$staff)
+  
+  ifelse(staff, export <- export_staff, export <- export_real)
+  
+  export <- export %>%
+    select(all_of(selected_col)) %>% 
     rename(MPS_format$var_dictionary[col_index])
   
   return(export)
