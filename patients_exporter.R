@@ -281,10 +281,25 @@ clean <- function(data) {
 
   # leading zeros on Site Code
   f <- mutate(data, `Demography_Site Code` = str_pad(`Demography_Site Code`, 2, pad = "0"))
-  
+  f <- mutate(data, `Demography_Patient Code` = str_pad(`Demography_Patient Code`, 2, pad = "0"))
+
   # patient ID
   f <- mutate(f, upid = sprintf("%s-%s-%s", Demography_Country, 
                                 `Demography_Site Code`, `Demography_Patient Code`))
+  
+  # check univocal ID
+  excpt <- count(f, upid) %>% filter(n > 1) %>% 
+    filter(upid != "--00") %>% {unlist(.$upid)}
+  cat("***", paste("The unique patient identifier in not uinque: ", 
+             paste(excpt, collapse = ", ")))
+  
+  # handle duplicate ID
+  f <- f %>% 
+    group_by(upid) %>% 
+    mutate(duplicates = row_number()) %>%
+    ungroup() %>% 
+    mutate(upid = ifelse(upid %in% excpt, 
+                         yes = paste("DUPLICATE", upid, duplicates, sep = "_"), upid))
   
   # dummification
   # COVID 19 - Sign and symptom_Other symptoms
