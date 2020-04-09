@@ -10,7 +10,7 @@ imported_file_path <- ""
 
 # install (if needed) or load libreries
 # if(!("tidyverse" %in% installed.packages()[,"Package"])) install.packages("tidyverse")
-require("magritte")
+library("tidyverse")
 
 #############################
 # Format
