@@ -408,37 +408,8 @@ prepare_export <- function(f, staff = FALSE) {
   return(export)
 }
 
-# export <- function() {
-#  
-#   # rename columns and take white list
-#   export <- f %>% 
-#     filter(!(Base_Provider %in% MPS_format$provider_blacklist)) %>%
-#     select(selected_col) %>% 
-#     rename(MPS_format$var_dictionary[col_index])
-#   
-#   return(export)
-# }
-
-# export_bl <- function(f) {
-#   
-#   # rename columns and take black list
-#   internal <- f %>% 
-#     filter(Base_Provider %in% MPS_format$provider_blacklist) %>%
-#     filter(`Demography_Site Code` != "00") %>%
-#     select(selected_col) %>% 
-#     rename(MPS_format$var_dictionary[col_index])
-#   
-#   return(internal)
-# }
-# type fix
-# write_csv(export, "temp.csv")
-# export2 <- read_csv("temp.csv", col_types = )
-
 # save spss output
 # haven::write_sav(export, fname)
-
-
-
 
 
 
