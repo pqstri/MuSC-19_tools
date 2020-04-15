@@ -284,7 +284,7 @@ clean <- function(data) {
 
   # leading zeros on Site Code
   f <- mutate(data, `Demography_Site Code` = str_pad(`Demography_Site Code`, 2, pad = "0"))
-  f <- mutate(data, `Demography_Patient Code` = str_pad(`Demography_Patient Code`, 2, pad = "0"))
+  f <- mutate(f, `Demography_Patient Code` = str_pad(`Demography_Patient Code`, 2, pad = "0"))
 
   # patient ID
   f <- mutate(f, upid = sprintf("%s-%s-%s", Demography_Country, 
