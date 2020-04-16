@@ -17,7 +17,10 @@ library("tidyverse")
 #############################
 
 headers <- c("Provider;", ";;Demography", ";;MS history", ";;COVID 19 - ", 
-             ";;COVID19 - ", ";;Comorbidity", ";;Surgery", ";;Comment")
+             ";;COVID19 - ", ";;Comorbidity", ";;Surgery;", ";;Comment")
+
+repeated_ev <- c(";;COVID 19 - Follow-up", ";;COVID 19 - Detailed treatment",
+             ";;COVID19 - Complication", ";;Comment")
 
 new_patient_tag <- "Provider;Patient;Sex;Created at;Updated at"
 
@@ -209,6 +212,14 @@ convert <- function(file) {
     uncount(multiplier) %>% 
     ungroup()
   
+  # remove multiple insertion after pass
+  # f <- group_by(f, pt, block) %>%
+  #   mutate(compl_header = sum_f == header_f)
+  #   mutate(is_unique = !duplicated(str_remove_all(line, ";"))) %>%
+  #   mutate(shouldBe_unique = !map_lgl(line, ~ any(str_detect(., repeated_ev)))) %>%
+  #   # filter(!(shouldBe_unique & !is_unique)) %>%
+  #   ungroup()
+  
   # condensate info
   f <- group_by(f, pt, is_header) %>%
     summarise(line = paste(line, collapse = ";"),
@@ -217,6 +228,9 @@ convert <- function(file) {
   # integrity check
   f %>% group_by(pt) %>% summarise(ok = all(fields == fields[1])) %>% 
     filter(!ok) %>% .$pt
+  
+  # bug multiple insertion after pass
+  f <- filter(f, pt != 295)
   
   # fix the ";" bug
   reimport <- function(line) {
