@@ -234,7 +234,7 @@ convert <- function(file) {
   
   # fix the ";" bug
   reimport <- function(line) {
-    cat("--> handling errors on: ", line, "\n\n")
+    # cat("--> handling errors on: ", line, "\n\n")
     read.csv2(text = line, header = FALSE) %>% 
       gather("k", "v") %>% 
       mutate(v = ifelse(is.na(v), "", v)) %>% 
@@ -307,8 +307,8 @@ clean <- function(data) {
   # check univocal ID
   excpt <- count(f, upid) %>% filter(n > 1) %>% 
     filter(upid != "--00") %>% {unlist(.$upid)}
-  cat("***", paste("The unique patient identifier in not uinque: ", 
-             paste(excpt, collapse = ", ")))
+  cat("***", paste("The following unique patient identifiers are not uinque:\n", 
+             paste(excpt, collapse = ", "), ".\n"))
   
   # handle duplicate ID
   f <- f %>% 
@@ -393,6 +393,7 @@ enrollment_summary_detail <- function(data) {
             `Base_Created at`)
 }
 
+
 #############################
 # Export
 #############################
@@ -422,10 +423,100 @@ prepare_export <- function(f, staff = FALSE) {
   return(export)
 }
 
+# select_if(temp, ~ all(!is.na(.)))
+
 # save spss output
 # haven::write_sav(export, fname)
 
 
+#############################
+# Export singolo centro
+#############################
+# 
+# temp <- clean(convert("~/Downloads/report (10).csv"))
+# 
+# names(temp)
+# 
+# temp[temp$Base_Provider == "Cinzia Cordioli",] %>% 
+#   mutate() %>% 
+#   select(upid, contains("Base"), 
+#          contains("Demography"), 
+#          contains("MS history"), 
+#          contains("Comorbidity"),
+#          contains("Surgery"),
+#          contains("COVID 19 - Sign"),
+#          contains("COVID19 - Diagnosis"),
+#          contains("COVID 19 - Detailed"),
+#          contains("COVID 19 - Radiological"),
+#          contains("COVID 19 - Laboratory"),
+#          contains("COVID 19 - Follow"),
+#          contains("COVID19 - Complication"),
+#          -ends_with("_Updated at"),
+#          -ends_with("_Created at"),
+#          -`Demography_Site Code`,
+#          -`Demography_Patient Code`) %>%
+#   mutate(upid = str_remove_all(upid, "DUPLICATE_|_\\d")) %>% 
+#   arrange(upid) %>% 
+#   select_if(function(x) {!all(is.na(x) | trimws(x) == "")}) %>% 
+#   write.csv("~/Downloads/Cordioli.csv")
+# 
+# temp2 <- read_csv("~/Downloads/Cordioli.csv", 
+#                   na = c("", "NA", " "))
+# 
+# openxlsx::write.xlsx(temp2, "~/Downloads/Cordioli.xlsx")
 
 
+#############################
+# fup
+#############################
 
+# f <- clean(convert("~/Downloads/report (10).csv"))
+# 
+# deaths <- select(f, upid, contains("outcome")) %>% 
+#   gather("time", "outcome", -upid) %>% 
+#   filter(!is.na(outcome)) %>% 
+#   mutate(dead = outcome == "Death") %>% 
+#   group_by(upid) %>% 
+#   summarise(dead = any(dead, na.rm = TRUE))
+# 
+# require(lubridate)
+# 
+# # pick vars
+# fup_times <- select(f, upid, 
+#        provider = Base_Provider, 
+#        first_visit = `Demography_Date of Visit`, 
+#        contains("Follow-up_Date of Visit")) %>% 
+#   
+#   # remove empty
+#   filter(!(trimws(first_visit) == "" | is.na(first_visit))) %>% 
+#   select_if(function(x) {!all(is.na(x) | trimws(x) == "")}) %>% 
+#   
+#   # verticalize dates
+#   gather("time", "first_date", names(.)[3:ncol(.)]) %>% 
+#   filter(!is.na(first_date)) %>% 
+#   mutate(first_date = lubridate::dmy(first_date)) %>% 
+#   
+#   # add info by upid
+#   group_by(upid) %>% 
+#   mutate(last_date = max(first_date, na.rm = TRUE),
+#          first_date = min(first_date, na.rm = TRUE),
+#          n_fup = n() - 1) %>% 
+#   
+#   # remove in between visits
+#   filter(time == "first_visit") %>% 
+#   select(-time) %>% 
+#   
+#   # add today
+#   mutate(last_date = case_when(last_date == first_date ~ lubridate::today(), TRUE ~ last_date)) %>% 
+#   mutate(last_contact = (first_date %--% last_date)/lubridate::days(1)) %>% 
+#   
+#   # consider deaths
+#   left_join(deaths) %>% 
+#   
+#   # sort by last contact
+#   arrange(desc(last_contact))
+# 
+# openxlsx::write.xlsx(fup_times, "~/Downloads/fup_times.xlsx")
+
+#############################
+# Fin.
