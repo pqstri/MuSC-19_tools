@@ -12,6 +12,9 @@ imported_file_path <- ""
 # if(!("tidyverse" %in% installed.packages()[,"Package"])) install.packages("tidyverse")
 library("tidyverse")
 
+# First run all the script then run the following commented line
+
+
 #############################
 # Format
 #############################
@@ -395,6 +398,16 @@ enrollment_summary_detail <- function(data) {
 
 
 #############################
+# type conversion
+#############################
+
+type_adjust <- function(data) {
+  type_convert(data) %>%
+    mutate_at(vars(DIC, DOV, ends_with("DATE"),
+                   START_DMD, STOP_DMD, FEVER_ONSET, LAB_DATA), lubridate::dmy)
+}
+
+#############################
 # Export
 #############################
 
@@ -418,7 +431,8 @@ prepare_export <- function(f, staff = FALSE) {
   
   export <- export %>%
     select(all_of(selected_col)) %>% 
-    rename(MPS_format$var_dictionary[col_index])
+    rename(MPS_format$var_dictionary[col_index]) %>% 
+    type_adjust()
   
   return(export)
 }
@@ -428,6 +442,14 @@ prepare_export <- function(f, staff = FALSE) {
 # save spss output
 # haven::write_sav(export, fname)
 
+#############################
+# Single pipeline
+#############################
+
+load_musc <- function(fromExported, andSaveItAs) {
+  dat <- fromExported %>% convert() %>% clean() %>% prepare_export()
+  haven::write_sav(dat, andSaveItAs)
+}
 
 #############################
 # Export singolo centro
@@ -464,7 +486,6 @@ prepare_export <- function(f, staff = FALSE) {
 #                   na = c("", "NA", " "))
 # 
 # openxlsx::write.xlsx(temp2, "~/Downloads/Cordioli.xlsx")
-
 
 #############################
 # fup
