@@ -233,7 +233,7 @@ convert <- function(file) {
     filter(!ok) %>% .$pt
   
   # bug multiple insertion after pass
-  f <- filter(f, pt != 295)
+  # f <- filter(f, pt != 295)
   
   # fix the ";" bug
   reimport <- function(line) {
