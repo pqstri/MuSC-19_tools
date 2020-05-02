@@ -20,13 +20,40 @@ library("tidyverse")
 #############################
 
 headers <- c("Provider;", ";;Demography", ";;MS history", ";;COVID 19 - ", 
-             ";;COVID19 - ", ";;Comorbidity", ";;Surgery;", ";;Comment")
+             ";;COVID19 - ", ";;Comorbidity", ";;Surgery;", ";;Comment", ";;Serology")
 
 repeated_ev <- c(";;COVID 19 - Follow-up", ";;COVID 19 - Detailed treatment",
              ";;COVID19 - Complication", ";;Comment")
 
+section_constrains <- c(Base = 1, 
+                     Demography = 1, 
+                     Comorbidity = 1, 
+                     `COVID 19 - Laboratory data` = 1,
+                     `COVID 19 - Radiological data` = 1,
+                     `COVID 19 - Sign and symptom` = 1,
+                     `COVID19 - Complication` = 1,
+                     `COVID19 - Diagnosis, Treatment` = 1,
+                     `MS history` = 1,
+                     Surgery = 1)
+
+section_size <- list(Base = function(x) all(x == 5, na.rm = TRUE), 
+                     Comment = function(x) all(x %% 4 == 0, na.rm = TRUE), 
+                     Comorbidity = function(x) all(x == 39, na.rm = TRUE), 
+                     `COVID 19 - Detailed treatment` = function(x) all(x %% 10 == 0, na.rm = TRUE),
+                     `COVID 19 - Follow-up` = function(x) all(x %% 20 == 0, na.rm = TRUE), 
+                     `COVID 19 - Laboratory data` = function(x) all(x == 17, na.rm = TRUE),
+                     `COVID 19 - Radiological data` = function(x) all(x == 19, na.rm = TRUE),
+                     `COVID 19 - Sign and symptom` = function(x) all(x == 14, na.rm = TRUE),
+                     `COVID19 - Complication` = function(x) all(x == 7, na.rm = TRUE),
+                     `COVID19 - Diagnosis, Treatment` = function(x) all(x == 12, na.rm = TRUE),
+                     Demography = function(x) all(x == 25, na.rm = TRUE), 
+                     `MS history` = function(x) all(x == 25, na.rm = TRUE), 
+                     `Serology blood test` = function(x) all(x == 6, na.rm = TRUE),
+                     Surgery = function(x) all(x == 11, na.rm = TRUE))
+
 new_patient_tag <- "Provider;Patient;Sex;Created at;Updated at"
 
+#####
 MPS_format <- list(
   # dummy variables
   var_dummy = c("COVID 19 - Sign and symptom_Other symptoms",
@@ -188,7 +215,7 @@ convert <- function(file) {
   
   # name patients
   f <- mutate(f, pt = cumsum(pt)) %>%
-    filter(fields != 0)
+    filter(!(fields == 0 & trimws(line) == ""))
   
   # indentify headers
   f <- mutate(f, is_header = map_lgl(line, ~ any(str_detect(., headers))))
@@ -229,11 +256,12 @@ convert <- function(file) {
               fields = sum(fields))
   
   # integrity check
+  cat("First attempt: plain text")
   f %>% group_by(pt) %>% summarise(ok = all(fields == fields[1])) %>% 
     filter(!ok) %>% .$pt
   
   # bug multiple insertion after pass
-  # f <- filter(f, pt != 295)
+  # f <- filter(f, pt != 464)
   
   # fix the ";" bug
   reimport <- function(line) {
@@ -252,32 +280,43 @@ convert <- function(file) {
     ungroup()
   
   # integrity check
+  cat("Second attempt: reimport trick")
   f %>% group_by(pt) %>% summarise(ok = all(fields == fields[1])) %>% 
     filter(!ok) %>% .$pt
   
   # tokenization and verticalization
-  max_length <- 300
+  max_length <- 400
   f <- f %>%
-    mutate(ambiguous_separator = ifelse(grepl("\".*\"", line), 0, 1)) %>% 
+    mutate(ambiguous_separator = ifelse(grepl("\".*\"", line), 0, 1)) %>%
     separate(line, as.character(1:max_length), sep = ";") %>% 
     tidyr::gather("position", "value", as.character(1:max_length), convert = TRUE) %>%
     group_by(pt, position) %>% 
-    summarise(value = paste(value, collapse = "!!!")) %>% 
-    tidyr::separate(value, c("value", "header"), sep = "!!!") %>% 
+    summarise(value = paste(value, collapse = "!@!@")) %>% 
+    tidyr::separate(value, c("value", "header"), sep = "!@!@") %>% 
     filter(header != "NA", !is.na(header)) %>%
     arrange(pt, position)
   
   # include topic in variable name
   f <- f %>% 
     group_by(pt) %>% 
-    mutate(blank = ifelse(value == "" & header == "", 1, 0)) %>% 
+    mutate(blank = ifelse(header == "", 1, 0)) %>% 
     mutate(prev_blank = lag(blank)) %>% 
     mutate(title = lag(blank == 1 & prev_blank == 1)) %>% 
     mutate(title = ifelse(title, header, NA)) %>% 
+    group_by(pt, title) %>%
+    mutate(n = row_number(),
+           constrains = ifelse(!is.na(title) & is.na(section_constrains[title]), TRUE,
+                               section_constrains[title] == n)) %>%
+    group_by(pt) %>%
+    fill(constrains) %>% 
+    {filter(., !is.na(constrains) & constrains == FALSE) %>% 
+        select(pt) %>% unique() %>% unlist() %>% 
+        cat("\nPotential data loss on these pts:", ., "\n"); .} %>% 
+    filter(constrains | is.na(constrains)) %>% 
     filter(!blank) %>% 
     fill(title) %>% 
     mutate(title = ifelse(is.na(title), "Base", title)) %>%
-    select(-blank, -prev_blank) %>% 
+    select(-blank, -prev_blank, -constrains, -n) %>% 
     ungroup()
   
   # avoid duplicates and horizontalize
@@ -323,9 +362,10 @@ clean <- function(data) {
   
   # dummification
   # COVID 19 - Sign and symptom_Other symptoms
+  dummification_size <- 20
   f <- separate(f, `COVID 19 - Sign and symptom_Other symptoms`,
-           into = as.character(1:10), sep = ",") %>% 
-    select(upid, as.character(1:10)) %>% 
+           into = as.character(1:dummification_size), sep = ",") %>% 
+    select(upid, as.character(1:dummification_size)) %>% 
     gather("position", "symptom", -upid) %>% 
     filter(!is.na(symptom) & symptom != "") %>% 
     mutate(symptom = trimws(symptom)) %>% 
