@@ -154,55 +154,57 @@ plot_map <- function(site_path, geocoding_path) {
 
 # f<-clean(convert("~/Downloads/report (26).csv"))
 
-real_pts <- f[!(f$Base_Provider %in% MPS_format$provider_blacklist),]
-
-real_pts$visit_date <- lubridate::dmy(real_pts$`Demography_Date of Visit`)
-
-# ggplot(real_pts %>%
-#          mutate(site = paste(Demography_Country, "-", `Demography_Site Code`)) %>%
-#          group_by(site) %>% mutate(count = n()) %>% ungroup() %>%
-#          filter(count > 2),
-#        aes(visit_date, fct_reorder(`Demography_Patient Code`, visit_date))) +
-#   geom_point() +
-#   # facet_wrap(~ site) +
-#   scale_x_date(breaks = "week") +
-#   theme(axis.text.y = element_blank())
-
-date_range <- min(real_pts$visit_date):max(real_pts$visit_date)
-
-ggplot(real_pts %>%
-         mutate(site = paste(Demography_Country, "-", `Demography_Site Code`)) %>%
-         group_by(site) %>% mutate(count = n()) %>% ungroup() %>%
-         filter(count > 2) %>% group_by(visit_date) %>% arrange(visit_date) %>% 
-         summarise(n = n(), site = first(site), Demography_Country = first(Demography_Country)) %>% 
-         mutate(cums = cumsum(n)),
-       aes(visit_date, cums)) +
-  geom_line() +
-  theme_light() +
-  scale_x_date(breaks = "week") +
-  labs(y = "N. of patients\n") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# ggsave("~/Downloads/enrollment.pdf")
-
-single_center <- real_pts[real_pts$Base_Provider == "Cinzia Cordioli",]
-date_range <- min(single_center$visit_date):max(single_center$visit_date)
-
-ggplot(single_center %>%
-         group_by(visit_date) %>% arrange(visit_date) %>% 
-         summarise(n = n()) %>% 
-         mutate(cums = cumsum(n)),
-       aes(visit_date, cums)) +
-  geom_line() +
-  geom_point(alpha = 0.5) +
-  theme_light() +
-  scale_x_date(breaks = "week", date_labels = "%d %b") +
-  labs(x = "\nEnrollment date", y = "N. of patients\n") +
-  coord_fixed(ratio = 0.35) +
-  ggtitle(paste("Site:",
-                first(single_center$Demography_Country), "-",
-                first(single_center$`Demography_Site Code`)))
-
+time_enroll <- function(f) {
+    real_pts <- f[!(f$Base_Provider %in% MPS_format$provider_blacklist),]
+  
+  real_pts$visit_date <- lubridate::dmy(real_pts$`Demography_Date of Visit`)
+  
+  # ggplot(real_pts %>%
+  #          mutate(site = paste(Demography_Country, "-", `Demography_Site Code`)) %>%
+  #          group_by(site) %>% mutate(count = n()) %>% ungroup() %>%
+  #          filter(count > 2),
+  #        aes(visit_date, fct_reorder(`Demography_Patient Code`, visit_date))) +
+  #   geom_point() +
+  #   # facet_wrap(~ site) +
+  #   scale_x_date(breaks = "week") +
+  #   theme(axis.text.y = element_blank())
+  
+  date_range <- min(real_pts$visit_date):max(real_pts$visit_date)
+  
+  time_enr_plot <- ggplot(real_pts %>%
+           mutate(site = paste(Demography_Country, "-", `Demography_Site Code`)) %>%
+           group_by(site) %>% mutate(count = n()) %>% ungroup() %>%
+           filter(count > 2) %>% group_by(visit_date) %>% arrange(visit_date) %>% 
+           summarise(n = n(), site = first(site), Demography_Country = first(Demography_Country)) %>% 
+           mutate(cums = cumsum(n)),
+         aes(visit_date, cums)) +
+    geom_line() +
+    theme_light() +
+    scale_x_date(breaks = "week") +
+    labs(y = "N. of patients\n") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  # ggsave("~/Downloads/enrollment.pdf")
+  return(time_enr_plot)
+  
+  # single_center <- real_pts[real_pts$Base_Provider == "Cinzia Cordioli",]
+  # date_range <- min(single_center$visit_date):max(single_center$visit_date)
+  # 
+  # ggplot(single_center %>%
+  #          group_by(visit_date) %>% arrange(visit_date) %>% 
+  #          summarise(n = n()) %>% 
+  #          mutate(cums = cumsum(n)),
+  #        aes(visit_date, cums)) +
+  #   geom_line() +
+  #   geom_point(alpha = 0.5) +
+  #   theme_light() +
+  #   scale_x_date(breaks = "week", date_labels = "%d %b") +
+  #   labs(x = "\nEnrollment date", y = "N. of patients\n") +
+  #   coord_fixed(ratio = 0.35) +
+  #   ggtitle(paste("Site:",
+  #                 first(single_center$Demography_Country), "-",
+  #                 first(single_center$`Demography_Site Code`)))
+}
 # ggsave("~/Downloads/enrollment_sc.pdf")
 
 #############################
