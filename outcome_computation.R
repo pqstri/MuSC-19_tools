@@ -5,39 +5,65 @@ compute_outcomes <- function(f) {
   #############################
   
   cat("finding first nad last contacts...\n")
+  
+  # select useful variables
   fup_db <- select(f, upid, provider = Base_Provider, contains("Follow-up_Date of Visit"), 
-                   fvisit_date = `COVID 19 - Sign and symptom_Date of first symptoms`,
-                   fvisit_imputing = `Demography_Date of Visit`) %>%
-    mutate(fvisit_date = ifelse(is.na(fvisit_date), fvisit_imputing, fvisit_date)) %>% 
-    select(-fvisit_imputing) %>% 
-    gather("time", "fup_date", -upid, -fvisit_date, -provider) %>% 
+                   fsympt_date = `COVID 19 - Sign and symptom_Date of first symptoms`,
+                   fvisit_date = `Demography_Date of Visit`) %>%
+    
+    # impute first contact if missing
+    mutate(fsympt_date = ifelse(is.na(fsympt_date), fvisit_date, fsympt_date)) %>% 
+
+    # verticalize
+    gather("time", "fup_date", -upid, -fsympt_date, -provider, -fvisit_date) %>% 
+    
+    # cast appropriate data format
     mutate_at(vars(ends_with("_date")), lubridate::dmy) %>%
+    
+    # for each patient
     group_by(upid, provider) %>% 
-    summarise(fvisit_date = first(fvisit_date),
+    
+    # select the first contact and the latest of the other contacts
+    summarise(fsympt_date = first(fsympt_date),
+              fvisit_date = first(fvisit_date),
               last_fup = lubridate::ymd(max(fup_date, na.rm = TRUE))) %>% 
-    mutate(last_fup = case_when(is.na(last_fup) ~ fvisit_date, TRUE ~ last_fup)) %>% 
-    filter(!is.na(fvisit_date))
+    
+    # if no other contacts the latest is equal to the first
+    mutate(last_fup = case_when(is.na(last_fup) ~ fsympt_date, TRUE ~ last_fup)) %>% 
+    
+    # clean
+    filter(!is.na(fsympt_date))
+  
+  # group all info containing dates
+  # dates_db <- select(f, -contains("_Updated"), -contains("_Created")) %>%
+  #   mutate_all(~ifelse(trimws(.) == "", NA, .)) %>%
+  #   mutate_at(vars(-upid), lubridate::dmy) %>%
+  #   select_if(~!all(is.na(.)))
+  
+  dates_db <- select(f, matches("follow.*date"), 
+                     `COVID 19 - Sign and symptom_Date of first symptoms`, 
+                     `Demography_Date of Visit`)
   
   # age, comorbidities, DMT, EDSS
   require(lubridate)
   minimal <- select(f, upid,
-                    age = Demography_Age,
-                    sex = Base_Sex,
-                    com_can = `Comorbidity_MALIGNANT TUMOR`,
-                    com_dep = `Comorbidity_MAJOR DEPRESSIVE DISORDER`,
-                    com_hae = `Comorbidity_HAEMATOLOGICAL DISEASE`,
-                    com_hiv = Comorbidity_HIV,
-                    com_hbv = Comorbidity_HBV,
-                    com_dbt = Comorbidity_DIABETES,
-                    com_chd = `Comorbidity_CORONARY HEART DISEASE`,
-                    com_cld = `Comorbidity_CHRONIC LIVER DISEASE`,
-                    com_ckd = `Comorbidity_CHRONIC KIDNEY DISEASE`,
-                    com_hts = Comorbidity_HYPERTENSION,
-                    com_cvd = `Comorbidity_CEREBROVASCULAR DISEASE`,
-                    msh_disdur  = `MS history_Date of MS Diagnosis`,
-                    msh_tp_bin  = `MS history_In Treatment`,
-                    mdh_tp_line = `MS history_If in treatment, Type of DMD`,
-                    mdh_tp_name = `MS history_If in treatment, Name of DMD`) %>% 
+                    # age = Demography_Age,
+                    # sex = Base_Sex,
+                    # com_can = `Comorbidity_MALIGNANT TUMOR`,
+                    # com_dep = `Comorbidity_MAJOR DEPRESSIVE DISORDER`,
+                    # com_hae = `Comorbidity_HAEMATOLOGICAL DISEASE`,
+                    # com_hiv = Comorbidity_HIV,
+                    # com_hbv = Comorbidity_HBV,
+                    # com_dbt = Comorbidity_DIABETES,
+                    # com_chd = `Comorbidity_CORONARY HEART DISEASE`,
+                    # com_cld = `Comorbidity_CHRONIC LIVER DISEASE`,
+                    # com_ckd = `Comorbidity_CHRONIC KIDNEY DISEASE`,
+                    # com_hts = Comorbidity_HYPERTENSION,
+                    # com_cvd = `Comorbidity_CEREBROVASCULAR DISEASE`,
+                    # msh_tp_bin  = `MS history_In Treatment`,
+                    # mdh_tp_line = `MS history_If in treatment, Type of DMD`,
+                    # mdh_tp_name = `MS history_If in treatment, Name of DMD`,
+                    msh_disdur  = `MS history_Date of MS Diagnosis`,) %>% 
     mutate(msh_disdur = (dmy("1/4/2020") %--% dmy(msh_disdur)) / years(1)) %>% 
     mutate_if(is.character, ~ ifelse(. == "", NA, .))
   
@@ -47,55 +73,108 @@ compute_outcomes <- function(f) {
   ##########
   # Death
   ##########
+  
   cat("finding deaths...\n")
+  
+  # select fup outcomes
   death <- select(f, upid, contains("outcome"), 
                      death_date = `COVID 19 - Follow-up_In case of death, report date`) %>%
+    
+    # verticalize and clean
     gather("time", "outcome", -upid, -death_date) %>% 
     mutate(outcome = outcome == "Death",
-           death_date = ifelse(death_date == "", NA, death_date)) %>% 
+           death_date = ifelse(death_date == "", NA, death_date)) %>%
+    
+    # for each patient
     group_by(upid) %>% 
+    
+    # set event=1 if any death event in fup, and take first death date, 
+    # flag an error if there are multiple death dates
     summarise(death_event = any(outcome), 
               death_time = first(na.omit(death_date)),
               death_errorFlag = length(unique(death_date)) != 1) %>% 
+    
+    # merge to viste dates
     left_join(fup_db) %>% 
-    filter(!is.na(fvisit_date)) %>% 
+    filter(!is.na(fsympt_date)) %>% 
+    
+    # set missing event date to last fup
     mutate(death_date = case_when(!is.na(death_time) & death_event == 1  ~ lubridate::dmy(death_time), TRUE ~ last_fup),
-           death_time = death_date - fvisit_date,
+           
+           # count days from first symptom to event
+           death_time = death_date - fsympt_date,
+           
+           # set who do not have events to event = 0
            death_event = ifelse(death_event & !is.na(death_event), 1, 0)) %>% 
+    
+    # clean
     select(upid, death_event, death_time)
   
   ##########
   # ICU
   ##########
+  
   cat("finding icu...\n")
+  
+  # check if event already occurred at time 0
   icu_baseline <- select(f, upid, 
            mech = `COVID19 - Diagnosis, Treatment_Mechanical ventilation`,
            type = `COVID19 - Diagnosis, Treatment_If ventilation is mechanical, please specify`) %>%
+    
+    # event = 1 if meccanical or invasive ventilation
     mutate(t0event = mech == "Yes" | type == "Invasive") %>% 
+    
+    # clean
     select(upid, t0event)
-           
+
   
+  # search in follow-up events
   icu_fup <- select(f, upid, contains("ICU"), matches("follow.*Date of Visit")) %>% 
+    
+    # verticalize
     gather("var", "val", -upid) %>% 
+    
+    # clean var meaning
     mutate(var = str_remove(var, "^.*?_")) %>% 
     separate(var, c("var", "order"), sep = "_") %>% 
     mutate(order = ifelse(is.na(order), 1, order)) %>% 
+    
+    # horizonalize only types 
     spread(var, val) %>% 
+    
+    # take only events
+    filter(`Hospitalized in Intensive Care Unit (ICU)` == "Yes") %>% 
+    
+    # rename
     select(upid, event_date = contains(", date"), 
            fup_date = contains("Date of visit"), 
            fup_event = `Hospitalized in Intensive Care Unit (ICU)`) %>% 
+    
+    # cast types
     mutate(fup_event = fup_event == "Yes",
            event_date = lubridate::dmy(event_date),
            fup_date = lubridate::dmy(fup_date))
+    
+    # TODO: avoid duplicates?
+
   
-  icu <- purrr::reduce(list(fup_db, icu_fup, icu_baseline), left_join) %>% 
+  # merge fup to baseline to dates
+  icu <- purrr::reduce(list(fup_db, icu_fup, icu_baseline), full_join) %>% 
+
+    # event=1 if baseline or fup event
     mutate(icu_event = as.numeric(fup_event | t0event),
+           
+           # otherwise event=0
            icu_event = replace_na(icu_event, 0),
-           icu_date = case_when(t0event == 1 ~ fvisit_date,
+           
+           # date is first symptom (?) if event at baseline, 
+           # event date if fup event and present, fupdate if missing
+           # otherwise last fup
+           icu_date = case_when(t0event == 1 ~ fsympt_date,
              icu_event == 1 & !is.na(event_date) ~ event_date,
              icu_event == 1 & !is.na(fup_date) ~ fup_date,
              TRUE ~ last_fup)) %>% 
-    mutate(icu_time = icu_date - fvisit_date) %>% 
+    mutate(icu_time = icu_date - fsympt_date) %>% 
     group_by(upid) %>% 
     summarise(icu_event = first(icu_event), 
               icu_time = first(icu_time)) %>% 
@@ -131,11 +210,11 @@ compute_outcomes <- function(f) {
            hosp_event = replace_na(hosp_event, 0),
            hosp_date = case_when(t0event & fup_event & !is.na(fup_date) & !is.na(t0date) ~ min(t0date, fup_date, na.rm = TRUE),
                                  t0event & !is.na(t0date) ~ t0date,
-                                 t0event ~ fvisit_date,
+                                 t0event ~ fsympt_date,
                                 hosp_event == 1 & !is.na(fup_date) ~ fup_date,
                                 hosp_event == 1 & !is.na(fup_date) ~ fup_date,
                                 TRUE ~ last_fup)) %>% 
-    mutate(hosp_time = hosp_date - fvisit_date) %>% 
+    mutate(hosp_time = hosp_date - fsympt_date) %>% 
     select(upid, hosp_event, hosp_time)
   
   ##########
@@ -197,19 +276,19 @@ compute_outcomes <- function(f) {
            fup_event = replace_na(fup_event, FALSE),
            nodate = is.na(date) & is.na(img_date) & is.na(fup_date),
            pneumonia_date = case_when(t0event & fup_event & !nodate ~ min(date, fup_date, img_date, na.rm = TRUE),
-                                      t0event & nodate ~ fvisit_date,
+                                      t0event & nodate ~ fsympt_date,
                                  fup_event ~ fup_date,
                                  res == "Abnormal" & !is.na(date) ~ date,
                                  res == "Abnormal" & !is.na(img_date) ~ img_date,
-                                 res == "Abnormal" & is.na(img_date) ~ fvisit_date,
+                                 res == "Abnormal" & is.na(img_date) ~ fsympt_date,
                                  t0event & !is.na(img_date) ~ img_date,
-                                 t0event & !is.na(img_date) ~ fvisit_date)) %>% 
+                                 t0event & !is.na(img_date) ~ fsympt_date)) %>% 
     group_by(upid) %>% 
     summarise(pneumonia_event = any(pneumonia_event == 1, na.rm = TRUE), 
-              fvisit_date = first(fvisit_date),
+              fsympt_date = first(fsympt_date),
               pneumonia_date = case_when(pneumonia_event == 1 ~ min(pneumonia_date, na.rm = TRUE),
                                          TRUE ~ first(na.omit(last_fup)))) %>% 
-    mutate(pneumonia_time = as.numeric(pneumonia_date - fvisit_date),
+    mutate(pneumonia_time = as.numeric(pneumonia_date - fsympt_date),
            pneumonia_event = as.numeric(pneumonia_event)) %>% 
     select(upid, pneumonia_event, pneumonia_time)
   
@@ -254,7 +333,7 @@ compute_outcomes <- function(f) {
   #                                 event == 1 & is.na(date) ~ dmy("01/01/0000"),
   #                                 event == 0 ~ last_fup)) %>% 
   #   View()
-  #   mutate(time = mixed_date - fvisit_date,
+  #   mutate(time = mixed_date - fsympt_date,
   #          time = ifelse(is.infinite(time), NA, time)) %>% 
   #   View()
   #   select(upid, event, time)
@@ -294,7 +373,7 @@ compute_outcomes <- function(f) {
     right_join(fup_db) %>% 
     mutate(date = if_else(event, fup_date, last_fup, last_fup)) %>% 
     mutate(sp_event = as.numeric(replace_na(event, FALSE)),
-           sp_time = as.numeric(date - fvisit_date)) %>% 
+           sp_time = as.numeric(date - fsympt_date)) %>% 
     select(upid, sp_event, sp_time)
   
   
@@ -367,9 +446,9 @@ compute_outcomes <- function(f) {
   # Merge outcomes
   #############################
   cat("assembling results...\n")
-  outcomes_list <- list(outcome1, outcome1, outcome2, outcome3, outcome4, outcome5)
+  outcomes_list <- list(outcome2, outcome1, outcome3, outcome4, outcome5)
   
-  db <- purrr::reduce(outcomes_list, bind_cols) %>% 
+  db <- purrr::reduce(outcomes_list, left_join) %>% 
     select(-matches("upid\\d+"), -event, -time) %>% 
     left_join(minimal)
   
@@ -378,6 +457,12 @@ compute_outcomes <- function(f) {
   return(list(db = db, hosp = hosp, pneumoni = pneumonia, 
               severe = sp, icu = icu, death = death, base = fup_db))
 }
+
+# file <- "~/Downloads/report-4.csv"
+# outcomes$dates <- dates_db
+# all_out <- purrr::reduce(outcomes, left_join)
+# prepare_export(clean(convert(file)))
+
 # #############################
 # # Test
 # #############################

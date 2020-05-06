@@ -177,18 +177,18 @@ MPS_format <- list(
     "VENT"                   = "COVID19 - Diagnosis, Treatment_Mechanical ventilation",
     "VENT_TYPE"              = "COVID19 - Diagnosis, Treatment_If ventilation is mechanical, please specify",  
     "COVID_SEVERITY"         = "COVID19 - Diagnosis, Treatment_Severity (for COVID positive patients)",       
-    "HOSPIT"                 = "COVID19 - Diagnosis, Treatment_Hospitalization",
-    "FU1_DATE"               = "COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)", 
-    "FU1_OUTCOME"            = "COVID 19 - Follow-up_Outcome",    
-    "FU1_RECOV_DATE"         = "COVID 19 - Follow-up_If recovered, please report date",       
-    "FU1_DEATH_DATE"         = "COVID 19 - Follow-up_In case of death, report date",       
-    "FU1_DEATH_CAUSE"        = "COVID 19 - Follow-up_Cause of death",        
-    "FU1_HOSPIT"             = "COVID 19 - Follow-up_Hospitalized since previous contact",   
-    "FU1_HOSPIT_DATE"        = "COVID 19 - Follow-up_If hospitalized, date",        
-    "FU1_DISC"               = "COVID 19 - Follow-up_Discharged since previous contact", 
-    "FU1_DISC_DATE"          = "COVID 19 - Follow-up_If discharged, date",      
-    "Tampone"                = NA,
-    "Tampone2"               = NA, 
+    "HOSPIT"                 = NA, #"COVID19 - Diagnosis, Treatment_Hospitalization",
+    "FU1_DATE"               = NA, #"COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)", 
+    "FU1_OUTCOME"            = NA, #"COVID 19 - Follow-up_Outcome",    
+    "FU1_RECOV_DATE"         = NA, #"COVID 19 - Follow-up_If recovered, please report date",       
+    "FU1_DEATH_DATE"         = NA, #"COVID 19 - Follow-up_In case of death, report date",       
+    "FU1_DEATH_CAUSE"        = NA, #"COVID 19 - Follow-up_Cause of death",        
+    "FU1_HOSPIT"             = NA, #"COVID 19 - Follow-up_Hospitalized since previous contact",   
+    "FU1_HOSPIT_DATE"        = NA, #"COVID 19 - Follow-up_If hospitalized, date",        
+    "FU1_DISC"               = NA, #"COVID 19 - Follow-up_Discharged since previous contact", 
+    "FU1_DISC_DATE"          = NA, #"COVID 19 - Follow-up_If discharged, date",      
+    "Tampone"                = "COVID19 - Diagnosis, Treatment_First oropharyngeal/nasopharyngeal swabs",
+    "Tampone2"               = "COVID19 - Diagnosis, Treatment_Second oropharyngeal/nasopharyngeal swabs", 
     "COVID_DATE"             = NA,   
     "HOSPIT_DATE"            = NA,    
     "COVID_SEVERITY2"        = NA,        
@@ -400,6 +400,10 @@ clean <- function(data) {
     spread(choice, position) %>% 
     right_join(f) %>% 
     mutate_at(vars(contains("COVID19 - Diagnosis, Treatment_Treatments")), ~ replace_na(., 0))
+  
+  # reduce size
+  f <- mutate_all(f, ~ ifelse(trimws(.) == "", NA, .)) %>% 
+    select_if( ~ !all(is.na(.)))
   
   return(f)
 }
