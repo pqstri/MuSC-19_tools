@@ -253,7 +253,7 @@ rec_plot <- function(f, separated = FALSE) {
     # count(label, ord, n, Demography_Country) %>% 
     ggplot(aes(fct_reorder(label, ord), fill = Demography_Country)) +
     geom_bar() +
-    geom_text(aes(label = n, y = n + 2), size = 5,
+    geom_text(aes(label = n, y = n + 2), size = 3,
               col = 1, alpha = 0.8, check_overlap = TRUE) +
     theme_light() +
     scale_y_continuous(breaks = seq(0, 1000, 10)) +
