@@ -1,4 +1,25 @@
 compute_outcomes <- function(f) {
+  
+  minimal <- select(f, upid,
+                    # age = Demography_Age,
+                    # sex = Base_Sex,
+                    com_can = `Comorbidity_MALIGNANT TUMOR`,
+                    com_dep = `Comorbidity_MAJOR DEPRESSIVE DISORDER`,
+                    com_hae = `Comorbidity_HAEMATOLOGICAL DISEASE`,
+                    com_hiv = Comorbidity_HIV,
+                    com_hbv = Comorbidity_HBV,
+                    com_dbt = Comorbidity_DIABETES,
+                    com_chd = `Comorbidity_CORONARY HEART DISEASE`,
+                    com_cld = `Comorbidity_CHRONIC LIVER DISEASE`,
+                    com_ckd = `Comorbidity_CHRONIC KIDNEY DISEASE`,
+                    com_hts = Comorbidity_HYPERTENSION,
+                    com_cvd = `Comorbidity_CEREBROVASCULAR DISEASE`,
+                    # msh_tp_bin  = `MS history_In Treatment`,
+                    # mdh_tp_line = `MS history_If in treatment, Type of DMD`,
+                    # mdh_tp_name = `MS history_If in treatment, Name of DMD`,
+                    msh_disdur  = `MS history_Date of MS Diagnosis`,) %>% 
+    mutate(msh_disdur = (dmy("1/4/2020") %--% dmy(msh_disdur)) / years(1)) %>% 
+    mutate_if(is.character, ~ ifelse(. == "", NA, .))
     
   # tools
   is_datable <- function(x) {
@@ -352,7 +373,9 @@ compute_outcomes <- function(f) {
                                         composite4_event == 1 ~ composite4_time,
                                         TRUE ~ max(icu_time, death_time, sever_time, pneum_time)))
   
-  return(outcomes)
+  outAndCovs <- left_join(minimal, outcomes)
+  
+  return(outAndCovs)
   
   # openxlsx::write.xlsx(outcomes, "~/Downloads/outcomes.xlsx")
   
