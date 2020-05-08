@@ -1,5 +1,7 @@
 compute_outcomes <- function(f) {
   
+  require(lubridate)
+  
   minimal <- select(f, upid,
                     # age = Demography_Age,
                     # sex = Base_Sex,
