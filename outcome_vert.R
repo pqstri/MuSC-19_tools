@@ -165,8 +165,9 @@ compute_outcomes <- function(f, debug = FALSE) {
     filter(rowSums(!is.na(.)) > fixed_non_missing) %>%
     mutate(date = ifelse(is.na(date) & is_datable(death), death, date)) %>% 
     
-    # verticalize
-    gather("update", "details", death)
+    # verticalize and clean
+    gather("update", "details", death) %>% 
+    select(-Outcome)
   
   # Hosp
   # set parms
