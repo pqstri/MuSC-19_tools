@@ -155,12 +155,14 @@ compute_outcomes <- function(f) {
   # set parms
   fixed_non_missing <- 2 # (upid, visit_date)
   
-  death_db <- select(rmi, upid, visit_date, contains("death")) %>% 
+  death_db <- select(rmi, upid, visit_date, contains("death"), Outcome) %>% 
+    
+    mutate(Outcome = ifelse(Outcome == "Death", "Death", NA)) %>% 
     
     # rename
     rename(date = `In case of death, report date`, 
-           death = contains("cause")) %>% 
-    filter(rowSums(!is.na(.)) > fixed_non_missing) %>% 
+           death = contains("cause")) %>%
+    filter(rowSums(!is.na(.)) > fixed_non_missing) %>%
     mutate(date = ifelse(is.na(date) & is_datable(death), death, date)) %>% 
     
     # verticalize
