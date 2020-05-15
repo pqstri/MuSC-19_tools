@@ -1,4 +1,4 @@
-compute_outcomes <- function(f, debug = FALSE) {
+compute_outcomes <- function(f, debug = FALSE, check_original = FALSE) {
   
   require(lubridate)
   
@@ -16,6 +16,69 @@ compute_outcomes <- function(f, debug = FALSE) {
                     com_ckd = `Comorbidity_CHRONIC KIDNEY DISEASE`,
                     com_hts = Comorbidity_HYPERTENSION,
                     com_cvd = `Comorbidity_CEREBROVASCULAR DISEASE`,
+                    `ORIGINAL_Demography_Date of Visit` = `Demography_Date of Visit`,
+                    `ORIGINAL_COVID 19 - Sign and symptom_Date of first symptoms` = `COVID 19 - Sign and symptom_Date of first symptoms`,
+                    `ORIGINAL_COVID19 - Diagnosis, Treatment_Mechanical ventilation` = `COVID19 - Diagnosis, Treatment_Mechanical ventilation`,
+                    `ORIGINAL_COVID19 - Diagnosis, Treatment_If ventilation is mechanical, please specify` = `COVID19 - Diagnosis, Treatment_If ventilation is mechanical, please specify`,
+                    `ORIGINAL_COVID19 - Diagnosis, Treatment_Hospitalization` = `COVID19 - Diagnosis, Treatment_Hospitalization`,
+                    `ORIGINAL_COVID19 - Diagnosis, Treatment_If patient is hospitalized, please report date of hospitalization` = `COVID19 - Diagnosis, Treatment_If patient is hospitalized, please report date of hospitalization`,
+                    `ORIGINAL_COVID 19 - Radiological data_PRESENCE OF PNEUMONIA` = `COVID 19 - Radiological data_PRESENCE OF PNEUMONIA`,
+                    `ORIGINAL_COVID 19 - Radiological data_Finding` = `COVID 19 - Radiological data_Finding`, 
+                    `ORIGINAL_COVID 19 - Radiological data_Finding ` = `COVID 19 - Radiological data_Finding `, 
+                    `ORIGINAL_COVID 19 - Radiological data_Finding_2` = `COVID 19 - Radiological data_Finding_2`, 
+                    `ORIGINAL_COVID 19 - Radiological data_Chest CT date` = `COVID 19 - Radiological data_Chest CT date`, 
+                    `ORIGINAL_COVID 19 - Radiological data_Chest radiograph date` = `COVID 19 - Radiological data_Chest radiograph date`, 
+                    `ORIGINAL_COVID 19 - Radiological data_Chest ultrasound date` = `COVID 19 - Radiological data_Chest ultrasound date`, 
+                    `ORIGINAL_COVID19 - Diagnosis, Treatment_Severity (for COVID positive patients)` = `COVID19 - Diagnosis, Treatment_Severity (for COVID positive patients)`, 
+                    `ORIGINAL_COVID 19 - Follow-up_Outcome` = `COVID 19 - Follow-up_Outcome`,
+                    `ORIGINAL_COVID 19 - Follow-up_Outcome_2` = `COVID 19 - Follow-up_Outcome_2`,
+                    `ORIGINAL_COVID 19 - Follow-up_Outcome_3` = `COVID 19 - Follow-up_Outcome_3`,
+                    `ORIGINAL_COVID 19 - Follow-up_Outcome_4` = `COVID 19 - Follow-up_Outcome_4`,
+                    `ORIGINAL_COVID 19 - Follow-up_Outcome_5` = `COVID 19 - Follow-up_Outcome_5`,
+                    `ORIGINAL_COVID 19 - Follow-up_Outcome_6` = `COVID 19 - Follow-up_Outcome_6`,
+                    `ORIGINAL_COVID 19 - Follow-up_Hospitalized in Intensive Care Unit (ICU)` = `COVID 19 - Follow-up_Hospitalized in Intensive Care Unit (ICU)`,
+                    `ORIGINAL_COVID 19 - Follow-up_Hospitalized in Intensive Care Unit (ICU)_2` = `COVID 19 - Follow-up_Hospitalized in Intensive Care Unit (ICU)_2`,     
+                    `ORIGINAL_COVID 19 - Follow-up_Hospitalized in Intensive Care Unit (ICU)_3` = `COVID 19 - Follow-up_Hospitalized in Intensive Care Unit (ICU)_3`,
+                    `ORIGINAL_COVID 19 - Follow-up_Hospitalized in Intensive Care Unit (ICU)_4` = `COVID 19 - Follow-up_Hospitalized in Intensive Care Unit (ICU)_4`,
+                    `ORIGINAL_COVID 19 - Follow-up_Hospitalized in Intensive Care Unit (ICU)_5` = `COVID 19 - Follow-up_Hospitalized in Intensive Care Unit (ICU)_5`,
+                    `ORIGINAL_COVID 19 - Follow-up_If hospitalized in Intensive Care Unit (ICU), date` = `COVID 19 - Follow-up_If hospitalized in Intensive Care Unit (ICU), date`,
+                    `ORIGINAL_COVID 19 - Follow-up_Hospitalized since previous contact` = `COVID 19 - Follow-up_Hospitalized since previous contact`,
+                    `ORIGINAL_COVID 19 - Follow-up_Hospitalized since previous contact_2` = `COVID 19 - Follow-up_Hospitalized since previous contact_2`,
+                    `ORIGINAL_COVID 19 - Follow-up_Hospitalized since previous contact_3` = `COVID 19 - Follow-up_Hospitalized since previous contact_3`,
+                    `ORIGINAL_COVID 19 - Follow-up_Hospitalized since previous contact_4` = `COVID 19 - Follow-up_Hospitalized since previous contact_4`,
+                    `ORIGINAL_COVID 19 - Follow-up_Hospitalized since previous contact_5` = `COVID 19 - Follow-up_Hospitalized since previous contact_5`,
+                    `ORIGINAL_COVID 19 - Follow-up_Hospitalized since previous contact_6` = `COVID 19 - Follow-up_Hospitalized since previous contact_6`,
+                    `ORIGINAL_COVID 19 - Follow-up_If hospitalized, date` = `COVID 19 - Follow-up_If hospitalized, date`,
+                    `ORIGINAL_COVID 19 - Follow-up_If hospitalized, date_2` = `COVID 19 - Follow-up_If hospitalized, date_2`,
+                    `ORIGINAL_COVID 19 - Follow-up_If hospitalized, date_4` = `COVID 19 - Follow-up_If hospitalized, date_4`,
+                    `ORIGINAL_COVID 19 - Follow-up_If hospitalized, date_5` = `COVID 19 - Follow-up_If hospitalized, date_5`,
+                    `ORIGINAL_COVID 19 - Follow-up_Cause of death` = `COVID 19 - Follow-up_Cause of death`,
+                    `ORIGINAL_COVID 19 - Follow-up_In case of death, report date` = `COVID 19 - Follow-up_In case of death, report date`,
+                    `ORIGINAL_COVID 19 - Follow-up_In case of death, report date_2` = `COVID 19 - Follow-up_In case of death, report date_2`,
+                    `ORIGINAL_COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)` = `COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)`,
+                    `ORIGINAL_COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)_2` = `COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)_2`,
+                    `ORIGINAL_COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)_3` = `COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)_3`,
+                    `ORIGINAL_COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)_4` = `COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)_4`,
+                    `ORIGINAL_COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)_5` = `COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)_5`,
+                    `ORIGINAL_COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)_6` = `COVID 19 - Follow-up_Date of Visit (or mail or telephone contact)_6`,
+                    `ORIGINAL_COVID 19 - Follow-up_If discharged, date` = `COVID 19 - Follow-up_If discharged, date`,
+                    `ORIGINAL_COVID 19 - Follow-up_If discharged, date_2` = `COVID 19 - Follow-up_If discharged, date_2`,
+                    `ORIGINAL_COVID 19 - Follow-up_If discharged, date_3` = `COVID 19 - Follow-up_If discharged, date_3`,
+                    `ORIGINAL_COVID 19 - Follow-up_If discharged, date_4` = `COVID 19 - Follow-up_If discharged, date_4`,
+                    `ORIGINAL_COVID 19 - Follow-up_If recovered, report date` = `COVID 19 - Follow-up_If recovered, report date`,
+                    `ORIGINAL_COVID 19 - Follow-up_If recovered, report date_2` = `COVID 19 - Follow-up_If recovered, report date_2`,
+                    `ORIGINAL_COVID 19 - Follow-up_If recovered, report date_3` = `COVID 19 - Follow-up_If recovered, report date_3`,
+                    `ORIGINAL_COVID 19 - Follow-up_If recovered, report date_4` = `COVID 19 - Follow-up_If recovered, report date_4`,
+                    `ORIGINAL_COVID 19 - Follow-up_Presence of Pneumonia` = `COVID 19 - Follow-up_Presence of Pneumonia`,
+                    `ORIGINAL_COVID 19 - Follow-up_Presence of Pneumonia_2` = `COVID 19 - Follow-up_Presence of Pneumonia_2`,
+                    `ORIGINAL_COVID 19 - Follow-up_Presence of Pneumonia_3` = `COVID 19 - Follow-up_Presence of Pneumonia_3`,
+                    `ORIGINAL_COVID 19 - Follow-up_Presence of Pneumonia_4` = `COVID 19 - Follow-up_Presence of Pneumonia_4`,
+                    `ORIGINAL_COVID 19 - Follow-up_Presence of Pneumonia_5` = `COVID 19 - Follow-up_Presence of Pneumonia_5`,
+                    `ORIGINAL_COVID 19 - Follow-up_Presence of Pneumonia_6` = `COVID 19 - Follow-up_Presence of Pneumonia_6`,
+                    `ORIGINAL_COVID 19 - Follow-up_Severity of COVID` = `COVID 19 - Follow-up_Severity of COVID`,
+                    `ORIGINAL_COVID 19 - Follow-up_Severity of COVID_2` = `COVID 19 - Follow-up_Severity of COVID_2`,
+                    `ORIGINAL_COVID 19 - Follow-up_Severity of COVID_3` = `COVID 19 - Follow-up_Severity of COVID_3`,
+                    `ORIGINAL_COVID 19 - Follow-up_Severity of COVID_4` = `COVID 19 - Follow-up_Severity of COVID_4`,
                     # msh_tp_bin  = `MS history_In Treatment`,
                     # mdh_tp_line = `MS history_If in treatment, Type of DMD`,
                     # mdh_tp_name = `MS history_If in treatment, Name of DMD`,
@@ -380,9 +443,12 @@ compute_outcomes <- function(f, debug = FALSE) {
   outAndCovs <- left_join(minimal, outcomes)
   
   if (debug) {
-    return(list(normal = outAndCovs, events = all_vert))
+    return(list(check_original = outAndCovs, events = all_vert))
   }
-  return(outAndCovs)
+  if (check_original) {
+    return(outAndCovs)
+  }
+  return(select(outAndCovs, -contains("ORIGINAL")))
   
   # openxlsx::write.xlsx(outcomes, "~/Downloads/outcomes.xlsx")
   
