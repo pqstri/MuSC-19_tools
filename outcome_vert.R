@@ -1,4 +1,4 @@
-compute_outcomes <- function(f) {
+compute_outcomes <- function(f, debug = FALSE) {
   
   require(lubridate)
   
@@ -239,7 +239,6 @@ compute_outcomes <- function(f) {
     arrange(upid, date) %>% 
     mutate_if(is_datable, lubridate::dmy)
   
-  
   mixed <- purrr::reduce(outcome_dbs, bind_rows) %>% 
     mutate_if(is_datable, lubridate::dmy) %>% 
     arrange(upid, date) %>% 
@@ -379,6 +378,9 @@ compute_outcomes <- function(f) {
   
   outAndCovs <- left_join(minimal, outcomes)
   
+  if (debug) {
+    return(list(normal = outAndCovs, events = all_vert))
+  }
   return(outAndCovs)
   
   # openxlsx::write.xlsx(outcomes, "~/Downloads/outcomes.xlsx")
