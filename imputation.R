@@ -21,7 +21,7 @@ ioe <- function(f, debug = FALSE, check_original = FALSE) {
   
   if (debug) {return(outcomes_db$events)}
   
-  j <- left_join(outcomes_db, exported_db, by = c("upid" = "PAT_ID"))
+  j <- left_join(exported_db, outcomes_db, by = c("PAT_ID" = "upid"))
   
   j$MS_TYPE <- factor(j$MS_TYPE)
   
