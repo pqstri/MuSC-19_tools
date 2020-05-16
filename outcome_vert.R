@@ -1,6 +1,40 @@
+timeZero_imputation <- function(f) {
+  
+  j <- f
+  
+  # imputation of days
+  require(lubridate) 
+  j$symptoms_days <- (lubridate::dmy(j$`COVID 19 - Sign and symptom_Date of first symptoms`) %--% lubridate::today())/days(1)
+  j[!is.na(j$symptoms_days) & j$symptoms_days < 0,]$symptoms_days <- NA#16may2020 2errori "Italy-10-08" "Italy-86-01"
+  
+  minimal <- select(j, symptoms_days, DOV = `Demography_Date of Visit`, items = contains("Sign and symptom_Other symptoms_"))
+  
+  imp <- mice::mice(minimal, maxit = 0)
+  predM = imp$predictorMatrix
+  meth = imp$method
+  meth[-1] <- ""
+  imp2 <- mice::mice(minimal, maxit = 15, predictorMatrix = predM, 
+                     method = meth, print = FALSE)
+  filled <- mice::complete(imp2, 1)
+  
+  # minimal %>% qmiss()
+  # filled %>% qmiss()
+  
+  minimal$symptoms_days %>% summary()
+  filled$symptoms_days %>% summary()
+  
+  j <- j %>% 
+    mutate(`COVID 19 - Sign and symptom_Date of first symptoms` = lubridate::today() - days(filled$symptoms_days)) %>% 
+    select(-symptoms_days)
+  
+  return(j)
+}
+
+
 compute_outcomes <- function(f, debug = FALSE, check_original = FALSE) {
   
   require(lubridate)
+  f <- timeZero_imputation(f)
   
   minimal <- select(f, upid,
                     # age = Demography_Age,
