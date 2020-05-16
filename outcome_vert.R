@@ -1,3 +1,4 @@
+require(mice)
 timeZero_imputation <- function(f) {
   
   j <- f
