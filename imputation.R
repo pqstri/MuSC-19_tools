@@ -95,8 +95,18 @@ ioe <- function(f, debug = FALSE, check_original = FALSE) {
   #                       group_col = "id") %>% 
   #   compareDF::create_output_table(limit = 50)
   
+  minimal_var2 <- c("LAST_EDSS", "MS_TYPE", "msh_disdur")
+  minimal <- select(j, all_of(minimal_var2))
+  imp <- mice::mice(minimal, maxit = 0)
+  predM = imp$predictorMatrix
+  meth = imp$method
+  imp2 <- mice::mice(minimal, maxit = 15, predictorMatrix = predM, 
+                     method = meth, print = FALSE)
+  filled2 <- mice::complete(imp2, 1)
+  
   temp <- bind_cols(filled, select(j, -minimal_vara)) %>% 
     mutate(msh_disdur = abs(msh_disdur)) %>% 
+    mutate(LAST_EDSS = filled2$LAST_EDSS) %>% 
     select(names(j))
   
   # openxlsx::write.xlsx(temp, "~/Downloads/imputed.xlsx")
