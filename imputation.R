@@ -5,6 +5,8 @@
 #' ma si può imputare
 #' da eta sesso e diabete
 
+require(mice)
+
 # impute-outcome-export
 ioe <- function(f, debug = FALSE, check_original = FALSE) {
   
