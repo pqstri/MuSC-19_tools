@@ -6,7 +6,7 @@
 #' da eta sesso e diabete
 
 # impute-outcome-export
-ioe <- function(f) {
+ioe <- function(f, debug = FALSE, check_original = FALSE) {
   
   qmiss <- function(df) {
     df %>% 
@@ -16,10 +16,12 @@ ioe <- function(f) {
       mutate(perc = value/nrow(j))
   }
   
+  outcomes_db <- compute_outcomes(f, debug = debug, check_original = check_original)
+  exported_db <- prepare_export(f)
   
-  j <- left_join(prepare_export(f), 
-                 compute_outcomes(f), 
-                 by = c("PAT_ID" = "upid"))
+  if (debug) {return(outcomes_db$events)}
+  
+  j <- left_join(outcomes_db, exported_db, by = c("upid" = "PAT_ID"))
   
   j$MS_TYPE <- factor(j$MS_TYPE)
   
@@ -41,6 +43,7 @@ ioe <- function(f) {
   
   ##
   # imputation of others
+  cat("Imputing...")
   minimal_vara <- c("AGE", "SEX", "HEIGHT", "WEIGHT", "BMI", "MS_TYPE", 
                     "COHAB_CHILD", "msh_disdur", "com_dbt", "com_hts")
   
