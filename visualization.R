@@ -428,76 +428,75 @@ drug_or_plot <- function() {
     guides(col = FALSE) +
     labs(x = "\nOdds Ratio", y = "")#Treatment\n")
   
-  table_or <- pharm_ita_vert %>% 
-    mutate(readable = sprintf("%.1f (%.1f-%.1f)", est, lwr, upr)) %>% 
-    select(`\nTreatment\n` = tp, inclusion, readable, id) %>% 
-    spread(inclusion, readable) %>% 
-    rename(`Suspected\nOR (95%CI)` = Suspected) %>% 
-    rename(`Positives\nOR (95%CI)` = Positives) %>% 
-    arrange(id) %>% 
-    select(-id) %>% 
-    ggpubr::ggtexttable(theme = ggpubr::ttheme("minimal", rownames.style = rownames_style(size = 25)), 
-                        rows = NULL)
+  # table_or <- pharm_ita_vert %>% 
+  #   mutate(readable = sprintf("%.1f (%.1f-%.1f)", est, lwr, upr)) %>% 
+  #   select(`\nTreatment\n` = tp, inclusion, readable, id) %>% 
+  #   spread(inclusion, readable) %>% 
+  #   rename(`Suspected\nOR (95%CI)` = Suspected) %>% 
+  #   rename(`Positives\nOR (95%CI)` = Positives) %>% 
+  #   arrange(id) %>% 
+  #   select(-id) %>% 
+  #   ggpubr::ggtexttable(theme = ggpubr::ttheme("minimal", rownames.style = rownames_style(size = 25)), 
+  #                       rows = NULL)
     
-  ggplot(pharm_ita_vert, aes(est, fct_reorder(inclusion, est), col = tp)) +
-    geom_vline(aes(xintercept = 1), lty = 2, col = "darkgray") +
-    geom_point(position = position_dodge(width = 0.5), aes(shape = inclusion), size = 2) +
-    geom_linerange(aes(xmin = lwr, xmax = upr, lty = inclusion)) +
-    facet_wrap(~ tp) +
-    theme_light() +
-    scale_shape_manual(values = c(19, 5)) +
-    theme(strip.background = element_rect(fill = "white"),
-          strip.text = element_text(colour = "black", face = "bold")) +
-    guides(col = FALSE) +
-    scale_y_discrete(label = c()) +
-    labs(x = "\nOdds Ratio", y = "")
+  # ggplot(pharm_ita_vert, aes(est, fct_reorder(inclusion, est), col = tp)) +
+  #   geom_vline(aes(xintercept = 1), lty = 2, col = "darkgray") +
+  #   geom_point(position = position_dodge(width = 0.5), aes(shape = inclusion), size = 2) +
+  #   geom_linerange(aes(xmin = lwr, xmax = upr, lty = inclusion)) +
+  #   facet_wrap(~ tp) +
+  #   theme_light() +
+  #   scale_shape_manual(values = c(19, 5)) +
+  #   theme(strip.background = element_rect(fill = "white"),
+  #         strip.text = element_text(colour = "black", face = "bold")) +
+  #   guides(col = FALSE) +
+  #   scale_y_discrete(label = c()) +
+  #   labs(x = "\nOdds Ratio", y = "")
   
   
-  ggplot(pharm_ita_vert, aes(est, tp, col = tp)) +
-    geom_point(position = position_dodge(width = 0.5)) +
-    geom_vline(aes(xintercept = exp_p, col = tp), lty = 2) +
-    geom_linerange(aes(xmin = lwr, xmax = upr)) +
-    facet_grid(tp ~ inclusion, scales = "free_y") +
-    theme_light() +
-    theme(strip.text.y = element_blank(),
-          strip.background.x = element_rect(fill = "white"),
-          strip.text.x = element_text(colour = "black", face = "bold")) +
-    guides(col = FALSE) +
-    labs(x = "\nObserved proportion", y = "Treatment\n")
+  # ggplot(pharm_ita_vert, aes(est, tp, col = tp)) +
+  #   geom_point(position = position_dodge(width = 0.5)) +
+  #   geom_vline(aes(xintercept = exp_p, col = tp), lty = 2) +
+  #   geom_linerange(aes(xmin = lwr, xmax = upr)) +
+  #   facet_grid(tp ~ inclusion, scales = "free_y") +
+  #   theme_light() +
+  #   theme(strip.text.y = element_blank(),
+  #         strip.background.x = element_rect(fill = "white"),
+  #         strip.text.x = element_text(colour = "black", face = "bold")) +
+  #   guides(col = FALSE) +
+  #   labs(x = "\nObserved proportion", y = "Treatment\n")
 
-  ggplot(pharm_ita_vert, aes(est/exp_p, tp, col = tp)) +
-    geom_point(position = position_dodge(width = 0.5)) +
-    geom_vline(aes(xintercept = exp_p/exp_p, col = tp), lty = 2) +
-    geom_linerange(aes(xmin = lwr/exp_p, xmax = upr/exp_p)) +
-    facet_grid(tp ~ inclusion, scales = "free_y") +
-    theme_light() +
-    theme(strip.text.y = element_blank(),
-          strip.background.x = element_rect(fill = "white"),
-          strip.text.x = element_text(colour = "black", face = "bold")) +
-    guides(col = FALSE) +
-    labs(x = "\nObserved/Expected", y = "Treatment\n")
+  # ggplot(pharm_ita_vert, aes(est/exp_p, tp, col = tp)) +
+  #   geom_point(position = position_dodge(width = 0.5)) +
+  #   geom_vline(aes(xintercept = exp_p/exp_p, col = tp), lty = 2) +
+  #   geom_linerange(aes(xmin = lwr/exp_p, xmax = upr/exp_p)) +
+  #   facet_grid(tp ~ inclusion, scales = "free_y") +
+  #   theme_light() +
+  #   theme(strip.text.y = element_blank(),
+  #         strip.background.x = element_rect(fill = "white"),
+  #         strip.text.x = element_text(colour = "black", face = "bold")) +
+  #   guides(col = FALSE) +
+  #   labs(x = "\nObserved/Expected", y = "Treatment\n")
   
-  ggplot(pharm_ita_vert, aes(est, as.numeric(tp), col = tp)) +
-    geom_point(position = position_dodge(width = 0.5)) +
-    # geom_vline(aes(xintercept = exp_p, col = tp), lty = 2) +
-    geom_point(aes(x = exp_p, y = abs(as.numeric(tp)-0.4), col = tp), shape = 18, size = 2) +
-    geom_point(aes(x = est, y = abs(as.numeric(tp)-0.6)), col = "transparent") +
-    geom_point(aes(x = est, y = abs(as.numeric(tp)+0.3)), col = "transparent") +
-    geom_linerange(aes(xmin = lwr, xmax = upr)) +
-    # facet_grid(tp ~ inclusion, scales = "free_y") +
-    theme_light() +
-    scale_y_continuous(breaks = seq(1, length(pharm_ita_vert$tp)/2, 1), labels = levels(pharm_ita_vert$tp)) +
-    facet_wrap(~ inclusion) +
-    theme(strip.text.y = element_blank(),
-          strip.background.x = element_rect(fill = "white"),
-          strip.text.x = element_text(colour = "black", face = "bold")) +
-    guides(col = FALSE) +
-    labs(x = "\nObserved proportion", y = "Treatment\n")
-  
+  # ggplot(pharm_ita_vert, aes(est, as.numeric(tp), col = tp)) +
+  #   geom_point(position = position_dodge(width = 0.5)) +
+  #   # geom_vline(aes(xintercept = exp_p, col = tp), lty = 2) +
+  #   geom_point(aes(x = exp_p, y = abs(as.numeric(tp)-0.4), col = tp), shape = 18, size = 2) +
+  #   geom_point(aes(x = est, y = abs(as.numeric(tp)-0.6)), col = "transparent") +
+  #   geom_point(aes(x = est, y = abs(as.numeric(tp)+0.3)), col = "transparent") +
+  #   geom_linerange(aes(xmin = lwr, xmax = upr)) +
+  #   # facet_grid(tp ~ inclusion, scales = "free_y") +
+  #   theme_light() +
+  #   scale_y_continuous(breaks = seq(1, length(pharm_ita_vert$tp)/2, 1), labels = levels(pharm_ita_vert$tp)) +
+  #   facet_wrap(~ inclusion) +
+  #   theme(strip.text.y = element_blank(),
+  #         strip.background.x = element_rect(fill = "white"),
+  #         strip.text.x = element_text(colour = "black", face = "bold")) +
+  #   guides(col = FALSE) +
+  #   labs(x = "\nObserved proportion", y = "Treatment\n")
+  # 
   # ggsave("~/Downloads/pharm_or.pdf", width = 6.5, height = 4)
   
 }
-
 
 
 
