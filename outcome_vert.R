@@ -32,10 +32,44 @@ timeZero_imputation <- function(f) {
 }
 
 
-compute_outcomes <- function(f, debug = FALSE, check_original = FALSE) {
+# tools
+
+is_datable_old <- function(x) {
+  
+  if (class(x) == "Date") { return(FALSE) }
+  
+  # threshold percentage
+  threshold <- 0.2
+  suppressWarnings(dmyzed <- lubridate::dmy(x))
+  mean(!is.na(dmyzed)) > threshold
+}
+
+
+is_datable <- function(x) {
+  
+  if (class(x) == "Date") { return(FALSE) }
+  
+  original_NAs <- sum(is.na(x))
+  # original_size <- length(x)
+  
+  # threshold 
+  # threshold <- 5
+  suppressWarnings(dmyzed <- lubridate::dmy(x))
+  sum(is.na(dmyzed)) <= original_NAs
+}  
+
+
+
+
+
+
+compute_outcomes <- function(f, debug = FALSE, 
+                             check_original = FALSE,
+                             impute_time0 = TRUE) {
   
   require(lubridate)
-  f <- timeZero_imputation(f)
+  if (impute_time0) { f <- timeZero_imputation(f) }
+  
   
   minimal <- select(f, upid,
                     # age = Demography_Age,
@@ -120,17 +154,6 @@ compute_outcomes <- function(f, debug = FALSE, check_original = FALSE) {
                     msh_disdur  = `MS history_Date of MS Diagnosis`,) %>% 
     mutate(msh_disdur = (dmy("1/4/2020") %--% dmy(msh_disdur)) / years(1)) %>% 
     mutate_if(is.character, ~ ifelse(. == "", NA, .))
-    
-  # tools
-  is_datable <- function(x) {
-    
-    if (class(x) == "Date") { return(FALSE) }
-    
-    # threshold percentage
-    threshold <- 0.2
-    suppressWarnings(dmyzed <- lubridate::dmy(x))
-    mean(!is.na(dmyzed)) > threshold
-  }
   
   # base
   base <- select(f, upid,
