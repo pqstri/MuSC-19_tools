@@ -416,6 +416,7 @@ clean <- function(data) {
                               any(val == "Negative")     ~ "Negative",
                               any(val == "Not executed") ~ "Not executed")) %>% 
     spread(n_swab, val) %>% 
+    ungroup() %>% 
     right_join(f)
   
   return(f)
