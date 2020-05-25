@@ -163,8 +163,8 @@ MPS_format <- list(
     "RATIO_ND"               = "COVID 19 - Laboratory data_PaO2/FiO2", 
     "RATIO"                  = "COVID 19 - Laboratory data_PaO2/FiO2", # dummy
     "RATIO_VALUE"            = "COVID 19 - Laboratory data_PaO2/FiO2, if abnormal",    
-    "FIRST_STREP"            = "COVID19 - Diagnosis, Treatment_First oropharyngeal/nasopharyngeal swabs",    
-    "SECOND_STREP"           = "COVID19 - Diagnosis, Treatment_Second oropharyngeal/nasopharyngeal swabs",     
+    "FIRST_STREP"            = "FIRST_STREP", #"COVID19 - Diagnosis, Treatment_First oropharyngeal/nasopharyngeal swabs",    
+    "SECOND_STREP"           = "SECOND_STREP", #"COVID19 - Diagnosis, Treatment_Second oropharyngeal/nasopharyngeal swabs",     
     "ANTIVIRAL"              = "COVID19 - Diagnosis, Treatment_Treatments_Antiviral",  
     "CHLOROQ"                = "COVID19 - Diagnosis, Treatment_Treatments_Antiviral", # dummy
     "HYDROX"                 = "COVID19 - Diagnosis, Treatment_Treatments_Hydroxychloroquine", # dummy
@@ -404,6 +404,19 @@ clean <- function(data) {
   # reduce size
   f <- mutate_all(f, ~ ifelse(trimws(.) == "", NA, .)) %>% 
     select_if( ~ !all(is.na(.)))
+  
+  f <- select(f, upid, contains("swab")) %>% 
+    gather("var", "val", -upid) %>% 
+    filter(!grepl("On going", val)) %>% 
+    mutate(n_swab = ifelse(grepl("First", var), "FIRST_STREP", "SECOND_STREP")) %>% 
+    # select(-var) %>% 
+    filter(!is.na(val)) %>%
+    group_by(upid, n_swab) %>% 
+    summarise(val = case_when(any(val == "Positive")     ~ "Positive",
+                              any(val == "Negative")     ~ "Negative",
+                              any(val == "Not executed") ~ "Not executed")) %>% 
+    spread(n_swab, val) %>% 
+    right_join(f)
   
   return(f)
 }
