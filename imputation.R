@@ -15,7 +15,7 @@ ioe <- function(f, debug = FALSE, check_original = FALSE) {
       mutate_all(is.na) %>% 
       summarise_all(sum) %>% 
       gather() %>% 
-      mutate(perc = value/nrow(j))
+      mutate(perc = value/nrow(df))
   }
   
   outcomes_db <- compute_outcomes(f, debug = debug, check_original = check_original)
@@ -23,7 +23,10 @@ ioe <- function(f, debug = FALSE, check_original = FALSE) {
   
   if (debug) {return(outcomes_db$events)}
   
-  j <- left_join(exported_db, outcomes_db, by = c("PAT_ID" = "upid"))
+  j <- left_join(exported_db, outcomes_db, by = c("PAT_ID" = "upid")) %>% 
+    mutate(msh_disdur = abs(msh_disdur))
+  
+  original_db <- j
   
   j$MS_TYPE <- factor(j$MS_TYPE)
   
@@ -45,7 +48,7 @@ ioe <- function(f, debug = FALSE, check_original = FALSE) {
   
   ##
   # imputation of others
-  cat("Imputing...")
+  cat("Imputing...\n")
   minimal_vara <- c("AGE", "SEX", "HEIGHT", "WEIGHT", "BMI", "MS_TYPE", 
                     "COHAB_CHILD", "msh_disdur", "com_dbt", "com_hts")
   
@@ -104,10 +107,18 @@ ioe <- function(f, debug = FALSE, check_original = FALSE) {
                      method = meth, print = FALSE)
   filled2 <- mice::complete(imp2, 1)
   
-  temp <- bind_cols(filled, select(j, -minimal_vara)) %>% 
-    mutate(msh_disdur = abs(msh_disdur)) %>% 
+  mutated_vars <- c("AGE", "SEX", "HEIGHT", "WEIGHT", #"BMI",
+                  "MS_TYPE", "COHAB_CHILD", "msh_disdur",
+                  "LAST_EDSS", "MS_TYPE")
+  
+  original_db <- rename_at(original_db, vars(all_of(mutated_vars)), ~ 
+                   paste("ORIGINAL", ., sep = "_"))
+  
+  vars_toRemove <- setdiff(minimal_vara, mutated_vars)
+  
+  temp <- bind_cols(filled, original_db) %>% 
     mutate(LAST_EDSS = filled2$LAST_EDSS) %>% 
-    select(names(j))
+    select(names(original_db), mutated_vars)
   
   # openxlsx::write.xlsx(temp, "~/Downloads/imputed.xlsx")
   
