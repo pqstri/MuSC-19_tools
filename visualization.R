@@ -278,7 +278,7 @@ rec_plot <- function(f, separated = FALSE) {
     labs(x = "", y = "Count\n", fill = "Country") +
     theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 15),
           panel.grid = element_blank(),
-          legend.position = c(.908, .92))
+          legend.position = c(.908, .91))
   
   row_recl <- recl_db %>% 
     # count(label, ord, n, Demography_Country) %>% 
@@ -310,10 +310,10 @@ rec_plot <- function(f, separated = FALSE) {
   gathered <- ita_recl +
     annotation_custom(
       grob = ggplotGrob(row_recl + theme(plot.background = element_blank())),
-      xmin = 7,
-      xmax = 27,
-      ymin = 23,
-      ymax = 85)
+      xmin = 12,
+      xmax = 34.8,
+      ymin = 20,
+      ymax = 95)
   # dev.off()
   
   if (separated) {return(gathered)} else {return(unique)}
