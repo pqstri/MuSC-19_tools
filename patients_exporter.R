@@ -165,6 +165,11 @@ MPS_format <- list(
     "RATIO_VALUE"            = "COVID 19 - Laboratory data_PaO2/FiO2, if abnormal",    
     "FIRST_STREP"            = "FIRST_STREP", #"COVID19 - Diagnosis, Treatment_First oropharyngeal/nasopharyngeal swabs",    
     "SECOND_STREP"           = "SECOND_STREP", #"COVID19 - Diagnosis, Treatment_Second oropharyngeal/nasopharyngeal swabs",     
+    # "FIRST_STREP_oldmethod"  = "COVID19 - Diagnosis, Treatment_First oropharyngeal/nasopharyngeal swabs",    
+    # "SECOND_STREP_oldmethod" = "COVID19 - Diagnosis, Treatment_Second oropharyngeal/nasopharyngeal swabs",     
+    "IgG"                    = "IgG",
+    "IgM"                    = "IgM",
+    "any_serology"           = "any_serology",
     "ANTIVIRAL"              = "COVID19 - Diagnosis, Treatment_Treatments_Antiviral",  
     "CHLOROQ"                = "COVID19 - Diagnosis, Treatment_Treatments_Antiviral", # dummy
     "HYDROX"                 = "COVID19 - Diagnosis, Treatment_Treatments_Hydroxychloroquine", # dummy
@@ -405,18 +410,32 @@ clean <- function(data) {
   f <- mutate_all(f, ~ ifelse(trimws(.) == "", NA, .)) %>% 
     select_if( ~ !all(is.na(.)))
   
-  f <- select(f, upid, contains("swab")) %>% 
-    gather("var", "val", -upid) %>% 
-    filter(!grepl("On going", val)) %>% 
-    mutate(n_swab = ifelse(grepl("First", var), "FIRST_STREP", "SECOND_STREP")) %>% 
-    # select(-var) %>% 
+  f <- select(f, upid, contains("swab")) %>%
+    gather("var", "val", -upid) %>%
+    filter(!grepl("On going", val)) %>%
+    mutate(n_swab = ifelse(grepl("First", var), "FIRST_STREP", "SECOND_STREP")) %>%
+    # select(-var) %>%
     filter(!is.na(val)) %>%
-    group_by(upid, n_swab) %>% 
+    group_by(upid, n_swab) %>%
     summarise(val = case_when(any(val == "Positive")     ~ "Positive",
                               any(val == "Negative")     ~ "Negative",
-                              any(val == "Not executed") ~ "Not executed")) %>% 
-    spread(n_swab, val) %>% 
+                              any(val == "Not executed") ~ "Not executed")) %>%
+    spread(n_swab, val) %>%
+    ungroup() %>%
+    right_join(f)
+  
+  f <- select(f, upid, contains("Serology blood test_Ig")) %>%
+    gather("var", "val", -upid) %>% 
+    filter(!is.na(val)) %>%
+    mutate(type = str_extract(var, "Ig.")) %>% 
+    group_by(upid, type) %>% 
+    summarise(val = case_when(any(val == "Positive") ~ "Positive",
+                              any(val == "Negative") ~ "Negative",
+                              any(val == "Not done") ~ "Not done",
+                              TRUE ~ NA_character_)) %>% 
     ungroup() %>% 
+    spread(type, val) %>% 
+    mutate(any_serology = ifelse(IgG == "Positive" | IgM == "Positive", "Positive", NA)) %>% 
     right_join(f)
   
   return(f)
