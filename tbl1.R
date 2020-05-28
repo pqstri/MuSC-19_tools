@@ -304,4 +304,4 @@ generate_table1 <- function(db) {
 }
 
 
-generate_table1(ioized) %>% View()
+# generate_table1(ioized) %>% View()
