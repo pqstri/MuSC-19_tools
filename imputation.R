@@ -118,7 +118,7 @@ ioe <- function(f, debug = FALSE, check_original = FALSE) {
   
   temp <- bind_cols(filled, original_db) %>% 
     mutate(LAST_EDSS = filled2$LAST_EDSS) %>% 
-    select(names(original_db), mutated_vars)
+    select(names(original_db), mutated_vars, BMI)
   
   # openxlsx::write.xlsx(temp, "~/Downloads/imputed.xlsx")
   
