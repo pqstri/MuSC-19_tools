@@ -165,6 +165,7 @@ MPS_format <- list(
     "RATIO_VALUE"            = "COVID 19 - Laboratory data_PaO2/FiO2, if abnormal",    
     "FIRST_STREP"            = "FIRST_STREP", #"COVID19 - Diagnosis, Treatment_First oropharyngeal/nasopharyngeal swabs",    
     "SECOND_STREP"           = "SECOND_STREP", #"COVID19 - Diagnosis, Treatment_Second oropharyngeal/nasopharyngeal swabs",     
+    "ASYMPTOMATIC"           = "COVID 19 - Sign and symptom_No symptoms",
     # "FIRST_STREP_oldmethod"  = "COVID19 - Diagnosis, Treatment_First oropharyngeal/nasopharyngeal swabs",    
     # "SECOND_STREP_oldmethod" = "COVID19 - Diagnosis, Treatment_Second oropharyngeal/nasopharyngeal swabs",     
     "IgG"                    = "IgG",
