@@ -109,6 +109,8 @@ MPS_format <- list(
     "ONG_DMD"                = "MS history_Ongoing",
     "DMD_INTERR"             = "MS history_If Stopped, Reason for DMD Interruption",   
     "DMD_INTER_OTH"          = "MS history_If Stop Reason is Other, please specify",      
+    "NAIVE"                  = "naive",
+    "PREVIOUS_TREAT"         = "MS history_If Yes, report the name of the last previous DMD",
     "METH_GLUC"              = "MS history_Any Cycle of Methylprednisolone or Other Glucocorticoid",  
     "METGL_START"            = "MS history_If yes, please Specify Start Date",    
     "METGL_STOP"             = "MS history_If yes, please Specify Stop Date",   
@@ -438,6 +440,10 @@ clean <- function(data) {
     spread(type, val) %>% 
     mutate(any_serology = ifelse(IgG == "Positive" | IgM == "Positive", "Positive", NA)) %>% 
     right_join(f)
+  
+  # reverse naive
+  f$naive <- ifelse(f$`MS history_Was the patient previously treated?` == "Yes",
+                    yes = "No", no = "Yes")
   
   return(f)
 }
