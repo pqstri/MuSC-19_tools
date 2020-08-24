@@ -69,7 +69,8 @@ MPS_format <- list(
             "Marta Ponzano", "Irene Schiavetti"),
   
   provider_blacklist = c("Francesca", "Fake", "Nicolo’ Di Tullio",
-                         "Marta Ponzano", "temp", "Irene Schiavetti"),
+                         #"Marta Ponzano", 
+                         "temp", "Irene Schiavetti"),
   
   # format converter
   var_dictionary = c(
