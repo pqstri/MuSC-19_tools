@@ -219,6 +219,11 @@ convert <- function(file) {
   f <- data.frame(line = readr::read_lines(file))
   f <- mutate(f, fields = stringr::str_count(line, ";"))
   
+  # bugfix turco
+  marker <- ";;;;;;;13/10/2016;Relapsing remitting MS (RRMS);1;14/07/2020;Yes;1st line;Interferon;;16/06/2020;16/07/2020;No;Patient's decision;;No;;Yes;14/07/2020;19/07/2020;14/07/2020;Normal or NCS;;14/07/2020;Normal or NCS;;30/08/2020 10:25;30/08/2020 10:25"
+  to_remove <- which(f$line == marker)
+  if (!is_empty(to_remove)) {f <- f[-to_remove,]}
+  
   # indentify patients
   f <- mutate(f, pt = line == new_patient_tag)
   
