@@ -115,8 +115,10 @@ ioe <- function(f, debug = FALSE, check_original = FALSE) {
                    paste("ORIGINAL", ., sep = "_"))
   
   vars_toRemove <- setdiff(minimal_vara, mutated_vars)
+  vars_toRemove <- vars_toRemove[-which(vars_toRemove == "BMI")]
   
-  temp <- bind_cols(filled, original_db) %>% 
+  temp <- select(filled, -all_of(vars_toRemove)) %>% 
+    bind_cols(original_db, .) %>% 
     mutate(LAST_EDSS = filled2$LAST_EDSS) %>% 
     select(names(original_db), mutated_vars, BMI)
   
