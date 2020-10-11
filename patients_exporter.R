@@ -169,6 +169,8 @@ MPS_format <- list(
     "FIRST_STREP"            = "FIRST_STREP", #"COVID19 - Diagnosis, Treatment_First oropharyngeal/nasopharyngeal swabs",    
     "SECOND_STREP"           = "SECOND_STREP", #"COVID19 - Diagnosis, Treatment_Second oropharyngeal/nasopharyngeal swabs",     
     "ASYMPTOMATIC"           = "COVID 19 - Sign and symptom_No symptoms",
+    "ASYMPT_REASON"          = "COVID 19 - Sign and symptom_In case of asymptomatic patient, reason for test execution (SWAB and/or SEROLOGICAL) ",
+    "ASYMPT_REASON_Other"    = "COVID 19 - Sign and symptom_If other reason for test execution, please specify",
     # "FIRST_STREP_oldmethod"  = "COVID19 - Diagnosis, Treatment_First oropharyngeal/nasopharyngeal swabs",    
     # "SECOND_STREP_oldmethod" = "COVID19 - Diagnosis, Treatment_Second oropharyngeal/nasopharyngeal swabs",     
     "IgG"                    = "IgG",
