@@ -207,7 +207,8 @@ MPS_format <- list(
     "COVID_SEVERITY3"        = NA,        
     "Death"                  = NA,
     "HOSPIT_overall"         = NA,       
-    "HOSPIT_final"           = NA
+    "HOSPIT_final"           = NA,
+    "DATE_CREATED"           = "Base_Created at"
   )
 )
 
