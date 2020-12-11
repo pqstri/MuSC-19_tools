@@ -223,12 +223,19 @@ convert <- function(file) {
   f <- mutate(f, fields = stringr::str_count(line, ";"))
   
   # bugfix turco
-  marker <- ";;;;;;;13/10/2016;Relapsing remitting MS (RRMS);1;14/07/2020;Yes;1st line;Interferon;;16/06/2020;16/07/2020;No;Patient's decision;;No;;Yes;14/07/2020;19/07/2020;14/07/2020;Normal or NCS;;14/07/2020;Normal or NCS;;30/08/2020 10:25;30/08/2020 10:25"
-  to_remove <- which(f$line == marker)
+  marker <- c(";;;;;;;13/10/2016;Relapsing remitting MS (RRMS);1;14/07/2020;Yes;1st line;Interferon;;16/06/2020;16/07/2020;No;Patient's decision;;No;;Yes;14/07/2020;19/07/2020;14/07/2020;Normal or NCS;;14/07/2020;Normal or NCS;;30/08/2020 10:25;30/08/2020 10:25",
+              ";;;09/02/2010;Relapsing remitting MS (RRMS);1.5;25/05/2020;Yes;1st line;Dimethyl fumarate;;12/06/2017;;Yes;;;;;No;;;01/06/2020;Normal or NCS;;01/06/2020;Normal or NCS;1;24/06/2020 13:13;24/06/2020 13:13")
+  to_remove <- map(marker, ~ which(f$line == .)) %>% unlist()
   if (!is_empty(to_remove)) {f <- f[-to_remove,]}
   
   # indentify patients
   f <- mutate(f, pt = line == new_patient_tag)
+  
+  # bugfix turco 2
+  bugged <- f[grepl("^;;;;;;;09/05/2004", f$line),]$line
+  fixed <- stringr::str_remove(bugged, "^;;;;")
+  f[grepl("^;;;;;;;09/05/2004", f$line),]$line <- fixed
+  f[f$line == fixed,]$fields <- stringr::str_count(fixed, ";")
   
   # name patients
   f <- mutate(f, pt = cumsum(pt)) %>%
@@ -300,6 +307,7 @@ convert <- function(file) {
   cat("Second attempt: reimport trick")
   f %>% group_by(pt) %>% summarise(ok = all(fields == fields[1])) %>% 
     filter(!ok) %>% .$pt
+  
   
   # tokenization and verticalization
   max_length <- 400
