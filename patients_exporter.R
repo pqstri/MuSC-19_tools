@@ -496,7 +496,7 @@ enrollment_summary_detail <- function(data) {
 
 type_adjust <- function(data) {
   type_convert(data) %>%
-    mutate_at(vars(DIC, DOV, ends_with("DATE"),
+    mutate_at(vars(DIC, DOV, ends_with("DATE"), METGL_START, METGL_STOP,
                    START_DMD, STOP_DMD, FEVER_ONSET, LAB_DATA), lubridate::dmy)
 }
 
