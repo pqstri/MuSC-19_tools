@@ -176,7 +176,7 @@ compute_outcomes <- function(f, debug = FALSE,
     unite(details, c(vent_mech, vent_type), sep = " mechanical ventilation; type: ") %>% 
     
     # define hosp
-    mutate(hospitalization = hosp_yn == "Yes" | !is.na(date) | ventilation,
+    mutate(hospitalization = hosp_yn == "Yes" | !is.na(date),
            icu = hospitalization & ventilation) %>% 
     
     # clean used var
