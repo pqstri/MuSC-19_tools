@@ -208,7 +208,8 @@ MPS_format <- list(
     "Death"                  = NA,
     "HOSPIT_overall"         = NA,       
     "HOSPIT_final"           = NA,
-    "DATE_CREATED"           = "Base_Created at"
+    "DATE_CREATED"           = "Base_Created at",
+    "icu2"                   = "icu2"
   )
 )
 
@@ -462,6 +463,21 @@ clean <- function(data) {
   f$naive <- ifelse(f$`MS history_Was the patient previously treated?` == "Yes",
                     yes = "No", no = "Yes")
   
+  # get fup data for swab and serology
+  # f %>% select(upid, date = contains("COVID 19 - Follow-up_Date of Visit"), first = matches("Follow-up_First.*swab"), second = matches("Follow-up_Second.*swab")) %>% gather("k", "v", -upid) %>% separate(k, c("k", "order"), sep = "_?(?=\\d)") %>% spread(k, v, convert = T) %>% filter(first == "Positive" | second == "Positive") %>% mutate(date = as.Date(date, format = "%d/%m/%y")) %>% group_by(upid) %>% summarise(fpvd = min(date)) %>% View("n")
+  
+  #icu si e invasive o fup icu si
+  dgn_icu <- (if_else(f$`COVID19 - Diagnosis, Treatment_If ventilation is mechanical, please specify` == "Invasive", T, F, F) &
+    if_else(f$`COVID19 - Diagnosis, Treatment_Mechanical ventilation` == "Yes", T, F, F))
+  
+  fup_icu <- select(f, upid, contains("_Hospitalized in Intensive Care Unit (ICU)")) %>% 
+    mutate_at(vars(-upid), ~ if_else(. == "Yes", T, F, F)) %>% 
+    gather(k, v, -upid) %>% 
+    group_by(upid) %>% 
+    summarize(icu = any(v)) %>% .$icu
+  
+  f$icu2 <- dgn_icu | fup_icu
+
   return(f)
 }
 
