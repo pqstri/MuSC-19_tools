@@ -488,18 +488,18 @@ clean <- function(data) {
            second = matches("Follow-up_Second.*swab")) %>% 
     gather("k", "v", -upid) %>% 
     separate(k, c("k", "order"), sep = "_?(?=\\d)") %>% 
-    spread(k, v, convert = T) %>% 
+    spread(k, v, convert = T) %>%
     filter(first == "Positive" | second == "Positive") %>% 
     mutate(date = as.Date(date, format = "%d/%m/%y")) %>% 
     group_by(upid) %>% 
-    summarise(pos_fup_visit = min(date)) %>% 
-    right_join(first_positive_swab_date) %>% 
+    summarise(pos_fup_visit = min(date, na.rm = T)) %>%
+    right_join(first_positive_swab_date) %>%
     group_by(upid) %>% 
     gather(time, date, -upid) %>% 
     # mutate(position = row_number(),
     #        first_positive_swab_details = sprintf("swab number %s in %s", position, ifelse(grep("fup", time), "follow-up", "diagnosis"))) %>% 
     arrange(date) %>% 
-    summarise(swab_positive_since = min(date))
+    summarise(swab_positive_since = min(date, na.rm = T))
   
   f <- left_join(f, first_positive_swab_date)
   
