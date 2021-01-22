@@ -209,7 +209,14 @@ MPS_format <- list(
     "HOSPIT_overall"         = NA,       
     "HOSPIT_final"           = NA,
     "DATE_CREATED"           = "Base_Created at",
-    "icu2"                   = "icu2"
+    "icu2"                   = "icu2",
+    "positive_since"         = "swab_positive_since",
+    "serology_date_1"        = "Serology blood test_Date of serology blood test",
+    "IgG_1"                  = "Serology blood test_IgG",
+    "IgM_1"                  = "Serology blood test_IgM",
+    "serology_date_2"        = "Serology blood test_Date of serology blood test_2",
+    "IgG_2"                  = "Serology blood test_IgG_2",
+    "IgM_2"                  = "Serology blood test_IgM_2"
   )
 )
 
@@ -464,7 +471,41 @@ clean <- function(data) {
                     yes = "No", no = "Yes")
   
   # get fup data for swab and serology
-  # f %>% select(upid, date = contains("COVID 19 - Follow-up_Date of Visit"), first = matches("Follow-up_First.*swab"), second = matches("Follow-up_Second.*swab")) %>% gather("k", "v", -upid) %>% separate(k, c("k", "order"), sep = "_?(?=\\d)") %>% spread(k, v, convert = T) %>% filter(first == "Positive" | second == "Positive") %>% mutate(date = as.Date(date, format = "%d/%m/%y")) %>% group_by(upid) %>% summarise(fpvd = min(date)) %>% View("n")
+  first_positive_swab_date <- f %>%
+    select(upid, date = "COVID19 - Diagnosis, Treatment_Date of COVID diagnosis", 
+           first = "COVID19 - Diagnosis, Treatment_First oropharyngeal/nasopharyngeal swabs", 
+           second = "COVID19 - Diagnosis, Treatment_Second oropharyngeal/nasopharyngeal swabs",
+           fsimpt = "COVID 19 - Sign and symptom_Date of first symptoms") %>% 
+    mutate(fpsd = if_else(first == "Positive" | second == "Positive", 
+                          ifelse(is.na(date), fsimpt, date), NA_character_, NA_character_)) %>% 
+    mutate(fpsd = as.Date(fpsd, format = "%d/%m/%y")) %>% 
+    select(upid, fpsd)
+  
+  first_positive_swab_date <- f %>% 
+    select(upid, 
+           date = contains("COVID 19 - Follow-up_Date of Visit"), 
+           first = matches("Follow-up_First.*swab"),
+           second = matches("Follow-up_Second.*swab")) %>% 
+    gather("k", "v", -upid) %>% 
+    separate(k, c("k", "order"), sep = "_?(?=\\d)") %>% 
+    spread(k, v, convert = T) %>% 
+    filter(first == "Positive" | second == "Positive") %>% 
+    mutate(date = as.Date(date, format = "%d/%m/%y")) %>% 
+    group_by(upid) %>% 
+    summarise(pos_fup_visit = min(date)) %>% 
+    right_join(first_positive_swab_date) %>% 
+    group_by(upid) %>% 
+    gather(time, date, -upid) %>% 
+    # mutate(position = row_number(),
+    #        first_positive_swab_details = sprintf("swab number %s in %s", position, ifelse(grep("fup", time), "follow-up", "diagnosis"))) %>% 
+    arrange(date) %>% 
+    summarise(swab_positive_since = min(date))
+  
+  f <- left_join(f, first_positive_swab_date)
+  
+  f$`Serology blood test_Date of serology blood test` <- lubridate::parse_date_time(f$`Serology blood test_Date of serology blood test`, orders = "%d %m %y")
+  f$`Serology blood test_Date of serology blood test_2` <- lubridate::parse_date_time(f$`Serology blood test_Date of serology blood test_2`, orders = "%d %m %y")
+
   
   #icu si e invasive o fup icu si
   dgn_icu <- (if_else(f$`COVID19 - Diagnosis, Treatment_If ventilation is mechanical, please specify` == "Invasive", T, F, F) &
