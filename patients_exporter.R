@@ -509,15 +509,20 @@ clean <- function(data) {
   
   #icu si e invasive o fup icu si
   dgn_icu <- (if_else(f$`COVID19 - Diagnosis, Treatment_If ventilation is mechanical, please specify` == "Invasive", T, F, F) &
-    if_else(f$`COVID19 - Diagnosis, Treatment_Mechanical ventilation` == "Yes", T, F, F))
+    if_else(f$`COVID19 - Diagnosis, Treatment_Mechanical ventilation` == "Yes", T, F, F)) %>% 
+    {data.frame(upid = f$upid, dgn_icu = .)}
   
-  fup_icu <- select(f, upid, contains("_Hospitalized in Intensive Care Unit (ICU)")) %>% 
+  fup_icu <- select(temp2, upid, contains("_Hospitalized in Intensive Care Unit (ICU)")) %>% 
     mutate_at(vars(-upid), ~ if_else(. == "Yes", T, F, F)) %>% 
     gather(k, v, -upid) %>% 
     group_by(upid) %>% 
-    summarize(icu = any(v)) %>% .$icu
+    summarize(icu = any(v)) %>% 
+    left_join(dgn_icu)
   
-  f$icu2 <- dgn_icu | fup_icu
+  f <- fup_icu %>% rowwise() %>% 
+    mutate(icu2 = any(dgn_icu, icu)) %>% 
+    select(upid, icu2) %>% 
+    right_join(f)
 
   return(f)
 }
