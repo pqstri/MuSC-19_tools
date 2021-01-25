@@ -512,7 +512,7 @@ clean <- function(data) {
     if_else(f$`COVID19 - Diagnosis, Treatment_Mechanical ventilation` == "Yes", T, F, F)) %>% 
     {data.frame(upid = f$upid, dgn_icu = .)}
   
-  fup_icu <- select(temp2, upid, contains("_Hospitalized in Intensive Care Unit (ICU)")) %>% 
+  fup_icu <- select(f, upid, contains("_Hospitalized in Intensive Care Unit (ICU)")) %>% 
     mutate_at(vars(-upid), ~ if_else(. == "Yes", T, F, F)) %>% 
     gather(k, v, -upid) %>% 
     group_by(upid) %>% 
