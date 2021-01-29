@@ -5,7 +5,7 @@ timeZero_imputation <- function(f) {
   
   # imputation of days
   require(lubridate) 
-  j$symptoms_days <- (lubridate::dmy(j$`COVID 19 - Sign and symptom_Date of first symptoms`) %--% lubridate::today())/days(1)
+  j$symptoms_days <- (lubridate::dmy(j$`COVID 19 - Sign and symptom_Date of first symptoms`) %--% lubridate::dmy(j$`Demography_Date of Visit`))/days(1)
   j[!is.na(j$symptoms_days) & j$symptoms_days < 0,]$symptoms_days <- NA#16may2020 2errori "Italy-10-08" "Italy-86-01"
   
   minimal <- select(j, symptoms_days, DOV = `Demography_Date of Visit`, items = contains("Sign and symptom_Other symptoms_"))
