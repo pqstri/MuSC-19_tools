@@ -25,7 +25,7 @@ timeZero_imputation <- function(f) {
   filled$symptoms_days %>% summary()
   
   j <- j %>% 
-    mutate(`COVID 19 - Sign and symptom_Date of first symptoms` = lubridate::today() - days(filled$symptoms_days)) %>% 
+    mutate(`COVID 19 - Sign and symptom_Date of first symptoms` = lubridate::dmy(j$`Demography_Date of Visit`) - days(filled$symptoms_days)) %>% 
     select(-symptoms_days)
   
   return(j)
