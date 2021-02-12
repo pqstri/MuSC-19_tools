@@ -224,7 +224,7 @@ MPS_format <- list(
 # Convert
 #############################
 
-convert2 <- function(file) {
+convert <- function(file) {
   
   # read file
   f <- data.frame(line = readr::read_lines(file))
@@ -376,7 +376,7 @@ convert2 <- function(file) {
 # Clean
 #############################
 
-clean2 <- function(data) {
+clean <- function(data) {
   
   # leading zeros on Site Code
   f <- mutate(data, `Demography_Site Code` = str_pad(`Demography_Site Code`, 2, pad = "0"))
