@@ -23,18 +23,18 @@ headers <- c("Provider;", ";;Demography", ";;MS history", ";;COVID 19 - ",
              ";;COVID19 - ", ";;Comorbidity", ";;Surgery;", ";;Comment", ";;Serology")
 
 repeated_ev <- c(";;COVID 19 - Follow-up", ";;COVID 19 - Detailed treatment",
-             ";;COVID19 - Complication", ";;Comment")
+                 ";;COVID19 - Complication", ";;Comment")
 
 section_constrains <- c(Base = 1, 
-                     Demography = 1, 
-                     Comorbidity = 1, 
-                     `COVID 19 - Laboratory data` = 1,
-                     `COVID 19 - Radiological data` = 1,
-                     `COVID 19 - Sign and symptom` = 1,
-                     `COVID19 - Complication` = 1,
-                     `COVID19 - Diagnosis, Treatment` = 1,
-                     `MS history` = 1,
-                     Surgery = 1)
+                        Demography = 1, 
+                        Comorbidity = 1, 
+                        `COVID 19 - Laboratory data` = 1,
+                        `COVID 19 - Radiological data` = 1,
+                        `COVID 19 - Sign and symptom` = 1,
+                        `COVID19 - Complication` = 1,
+                        `COVID19 - Diagnosis, Treatment` = 1,
+                        `MS history` = 1,
+                        Surgery = 1)
 
 section_size <- list(Base = function(x) all(x == 5, na.rm = TRUE), 
                      Comment = function(x) all(x %% 4 == 0, na.rm = TRUE), 
@@ -224,7 +224,7 @@ MPS_format <- list(
 # Convert
 #############################
 
-convert <- function(file) {
+convert2 <- function(file) {
   
   # read file
   f <- data.frame(line = readr::read_lines(file))
@@ -253,35 +253,30 @@ convert <- function(file) {
   f <- mutate(f, is_header = map_lgl(line, ~ any(str_detect(., headers))))
   
   # identify multiple objects
-  f <- f %>% group_by(pt) %>% 
+  b1 <- f %>% group_by(pt) %>% 
     mutate(block = cumsum(is_header)) %>% 
-    group_by(pt, block) %>% 
+    group_by(pt, block)
     
     # \n bug
-    mutate(newline = str_count(line, "\"") %% 2) %>% 
+  b2 <-  mutate(b1, newline = str_count(line, "\"") %% 2) %>% 
     mutate(newline_open = cumsum(newline) %% 2) %>% 
     mutate(newline = as.numeric(newline == 1 | newline_open == 1)) %>% 
-    group_by(pt, block, is_header, newline) %>% 
+    group_by(pt, block, is_header, newline)
     
     # continue
-    group_by(pt, block) %>% 
-    mutate(sheets = n()) %>% 
-    
-    mutate(newline_penalty = ifelse(is_header & any(newline), sum(newline)-1, 0)) %>%
-    group_by(pt, block) %>%
-    mutate(multiplier = ifelse(is_header & sheets > 2, sheets-1-newline_penalty, 1)) %>%
-    
-    uncount(multiplier) %>% 
-    ungroup()
+  b3 <-  group_by(b2, pt, block) %>% 
+    mutate(sheets = n(),
+           any_newline = any(newline == 1),
+           sum_newline = sum(newline))
   
-  # remove multiple insertion after pass
-  # f <- group_by(f, pt, block) %>%
-  #   mutate(compl_header = sum_f == header_f)
-  #   mutate(is_unique = !duplicated(str_remove_all(line, ";"))) %>%
-  #   mutate(shouldBe_unique = !map_lgl(line, ~ any(str_detect(., repeated_ev)))) %>%
-  #   # filter(!(shouldBe_unique & !is_unique)) %>%
-  #   ungroup()
+  b4 <- mutate(b3, newline_penalty = ifelse(is_header & any_newline, sum_newline-1, 0))
   
+  b5 <- group_by(b4, pt, block) %>%
+    mutate(multiplier = ifelse(is_header & sheets > 2, sheets-1-newline_penalty, 1))
+    
+  f <-  uncount(b5, multiplier) %>%  ungroup()
+  
+
   # condensate info
   f <- group_by(f, pt, is_header) %>%
     summarise(line = paste(line, collapse = ";"),
@@ -305,10 +300,14 @@ convert <- function(file) {
       {paste(.$v, collapse = ";")}
   }
   
-  f <- f %>%
-    rowwise() %>% 
-    mutate(line = ifelse(grepl("\"", line), reimport(line), line)) %>% 
-    mutate(fields = str_count(line, ";")) %>% 
+  lines_to_reimport <- grepl("\"", f$line)
+  f[lines_to_reimport,]$line <- map_chr(f[lines_to_reimport,]$line, reimport)
+  
+  # b1 <- f %>%
+  #   rowwise() %>% 
+  #   mutate(line = ifelse(grepl("\"", line), reimport(line), line))
+  # 
+  f <- mutate(f, fields = str_count(line, ";")) %>% 
     ungroup()
   
   # integrity check
@@ -319,46 +318,54 @@ convert <- function(file) {
   
   # tokenization and verticalization
   max_length <- 400
-  f <- f %>%
+  b1 <- f %>%
     mutate(ambiguous_separator = ifelse(grepl("\".*\"", line), 0, 1)) %>%
-    separate(line, as.character(1:max_length), sep = ";") %>% 
-    tidyr::gather("position", "value", as.character(1:max_length), convert = TRUE) %>%
+    separate(line, as.character(1:max_length), sep = ";")
+  
+  b2 <-  tidyr::gather(b1, "position", "value", as.character(1:max_length), convert = TRUE) %>%
     group_by(pt, position) %>% 
-    summarise(value = paste(value, collapse = "!@!@")) %>% 
-    tidyr::separate(value, c("value", "header"), sep = "!@!@") %>% 
-    filter(header != "NA", !is.na(header)) %>%
-    arrange(pt, position)
+    summarise(value = paste(value, collapse = "!@!@"))
+  
+  b3 <-  tidyr::separate(b2, value, c("value", "header"), sep = "!@!@") %>% 
+    filter(header != "NA", !is.na(header))
+  
+  f <- arrange(b3, pt, position)
   
   # include topic in variable name
-  f <- f %>% 
+  b1 <- f %>% 
     group_by(pt) %>% 
     mutate(blank = ifelse(header == "", 1, 0)) %>% 
     mutate(prev_blank = lag(blank)) %>% 
     mutate(title = lag(blank == 1 & prev_blank == 1)) %>% 
-    mutate(title = ifelse(title, header, NA)) %>% 
-    group_by(pt, title) %>%
+    mutate(title = ifelse(title, header, NA))
+  
+  b2 <- group_by(b1, pt, title) %>%
     mutate(n = row_number(),
            constrains = ifelse(!is.na(title) & is.na(section_constrains[title]), TRUE,
-                               section_constrains[title] == n)) %>%
-    group_by(pt) %>%
+                               section_constrains[title] == n))
+  b3 <-  group_by(b2, pt) %>%
     fill(constrains) %>% 
     {filter(., !is.na(constrains) & constrains == FALSE) %>% 
         select(pt) %>% unique() %>% unlist() %>% 
         cat("\nPotential data loss on these pts:", ., "\n"); .} %>% 
     filter(constrains | is.na(constrains)) %>% 
-    filter(!blank) %>% 
-    fill(title) %>% 
-    mutate(title = ifelse(is.na(title), "Base", title)) %>%
-    select(-blank, -prev_blank, -constrains, -n) %>% 
+    filter(!blank)
+    
+  b4 <- fill(b3, title) %>% 
+    mutate(title = ifelse(is.na(title), "Base", title))
+  
+  f <- select(b4, -blank, -prev_blank, -constrains, -n) %>% 
     ungroup()
   
   # avoid duplicates and horizontalize
-  f <- f %>%
-    tidyr::unite("variable", title, header) %>% 
-    group_by(pt, variable) %>%
+  b1 <- f %>%
+    tidyr::unite("variable", title, header)
+  
+  b2 <- group_by(b1, pt, variable) %>%
     mutate(multiple = row_number()) %>% 
-    ungroup() %>% 
-    mutate(variable = ifelse(multiple > 1, paste(variable, multiple, sep = "_"), variable)) %>%
+    ungroup()
+    
+  f <- mutate(b2, variable = ifelse(multiple > 1, paste(variable, multiple, sep = "_"), variable)) %>%
     select(-position, -multiple) %>% 
     tidyr::spread(variable, value)
   
@@ -369,12 +376,12 @@ convert <- function(file) {
 # Clean
 #############################
 
-clean <- function(data) {
-
+clean2 <- function(data) {
+  
   # leading zeros on Site Code
   f <- mutate(data, `Demography_Site Code` = str_pad(`Demography_Site Code`, 2, pad = "0"))
   f <- mutate(f, `Demography_Patient Code` = str_pad(`Demography_Patient Code`, 2, pad = "0"))
-
+  
   # patient ID
   f <- mutate(f, upid = sprintf("%s-%s-%s", Demography_Country, 
                                 `Demography_Site Code`, `Demography_Patient Code`))
@@ -383,7 +390,7 @@ clean <- function(data) {
   excpt <- count(f, upid) %>% filter(n > 1) %>% 
     filter(upid != "--00") %>% {unlist(.$upid)}
   cat("***", paste("The following unique patient identifiers are not uinque:\n", 
-             paste(excpt, collapse = ", "), ".\n"))
+                   paste(excpt, collapse = ", "), ".\n"))
   
   # handle duplicate ID
   f <- f %>% 
@@ -396,41 +403,48 @@ clean <- function(data) {
   # dummification
   # COVID 19 - Sign and symptom_Other symptoms
   dummification_size <- 20
-  f <- separate(f, `COVID 19 - Sign and symptom_Other symptoms`,
-           into = as.character(1:dummification_size), sep = ",") %>% 
+  b1 <- separate(f, `COVID 19 - Sign and symptom_Other symptoms`,
+                into = as.character(1:dummification_size), sep = ",") %>% 
     select(upid, as.character(1:dummification_size)) %>% 
-    gather("position", "symptom", -upid) %>% 
-    filter(!is.na(symptom) & symptom != "") %>% 
+    gather("position", "symptom", -upid)
+  
+  b2 <- filter(b1, !is.na(symptom) & symptom != "") %>% 
     mutate(symptom = trimws(symptom)) %>% 
     mutate(symptom = paste("COVID 19 - Sign and symptom_Other symptoms", symptom, sep = "_")) %>% 
-    mutate(position = 1) %>% 
-    spread(symptom, position) %>% 
-    right_join(f) %>% 
-    mutate_at(vars(contains("COVID 19 - Sign and symptom_Other symptoms")), ~ replace_na(., 0))
+    mutate(position = 1)
+    
+  b3 <- spread(b2, symptom, position) %>% 
+    right_join(f)
+  
+  f <-  mutate_at(b3, vars(contains("COVID 19 - Sign and symptom_Other symptoms")), ~ replace_na(., 0))
   
   # COVID 19 - Sign and symptom_Signs of infection
-  f <- separate(f, `COVID 19 - Sign and symptom_Signs of infection`,
+  b1 <- separate(f, `COVID 19 - Sign and symptom_Signs of infection`,
                 into = as.character(1:10), sep = ",") %>% 
     select(upid, as.character(1:10)) %>% 
-    gather("position", "symptom", -upid) %>% 
-    filter(!is.na(symptom) & symptom != "") %>% 
+    gather("position", "symptom", -upid)
+  
+  b2 <- filter(b1, !is.na(symptom) & symptom != "") %>% 
     mutate(symptom = trimws(symptom)) %>% 
     mutate(symptom = paste("COVID 19 - Sign and symptom_Signs of infection", symptom, sep = "_")) %>% 
     mutate(position = 1) %>% 
-    spread(symptom, position) %>% 
-    right_join(f) %>% 
+    spread(symptom, position) 
+  
+  f <- right_join(b2, f) %>% 
     mutate_at(vars(contains("COVID 19 - Sign and symptom_Signs of infection")), ~ replace_na(., 0))
   
   # COVID19 - Diagnosis, Treatment_Treatments
-  f <- separate(f, `COVID19 - Diagnosis, Treatment_Treatments`,
+  b1 <- separate(f, `COVID19 - Diagnosis, Treatment_Treatments`,
                 into = as.character(1:10), sep = ",") %>% 
     select(upid, as.character(1:10)) %>% 
-    gather("position", "choice", -upid) %>% 
-    filter(!is.na(choice) & choice != "") %>% 
+    gather("position", "choice", -upid)
+  
+  b2 <-  filter(b1, !is.na(choice) & choice != "") %>% 
     mutate(choice = trimws(choice)) %>% 
     mutate(choice = paste("COVID19 - Diagnosis, Treatment_Treatments", choice, sep = "_")) %>% 
-    mutate(position = 1) %>% 
-    spread(choice, position) %>% 
+    mutate(position = 1)
+    
+  f <- spread(b2, choice, position) %>% 
     right_join(f) %>% 
     mutate_at(vars(contains("COVID19 - Diagnosis, Treatment_Treatments")), ~ replace_na(., 0))
   
@@ -438,31 +452,35 @@ clean <- function(data) {
   f <- mutate_all(f, ~ ifelse(trimws(.) == "", NA, .)) %>% 
     select_if( ~ !all(is.na(.)))
   
-  f <- select(f, upid, contains("swab")) %>%
-    gather("var", "val", -upid) %>%
-    filter(!grepl("On going", val)) %>%
+  b1 <- select(f, upid, contains("swab")) %>%
+    gather("var", "val", -upid) 
+  
+  b2 <-  filter(b1, !grepl("On going", val)) %>%
     mutate(n_swab = ifelse(grepl("First", var), "FIRST_STREP", "SECOND_STREP")) %>%
     # select(-var) %>%
     filter(!is.na(val)) %>%
     group_by(upid, n_swab) %>%
     summarise(val = case_when(any(val == "Positive")     ~ "Positive",
                               any(val == "Negative")     ~ "Negative",
-                              any(val == "Not executed") ~ "Not executed")) %>%
-    spread(n_swab, val) %>%
+                              any(val == "Not executed") ~ "Not executed"))
+    
+  f <- spread(b2, n_swab, val) %>%
     ungroup() %>%
     right_join(f)
   
-  f <- select(f, upid, contains("Serology blood test_Ig")) %>%
+  b1 <- select(f, upid, contains("Serology blood test_Ig")) %>%
     gather("var", "val", -upid) %>% 
     filter(!is.na(val)) %>%
-    mutate(type = str_extract(var, "Ig.")) %>% 
-    group_by(upid, type) %>% 
+    mutate(type = str_extract(var, "Ig."))
+  
+  b2 <-  group_by(b1, upid, type) %>% 
     summarise(val = case_when(any(val == "Positive") ~ "Positive",
                               any(val == "Negative") ~ "Negative",
                               any(val == "Not done") ~ "Not done",
                               TRUE ~ NA_character_)) %>% 
-    ungroup() %>% 
-    spread(type, val) %>% 
+    ungroup()
+  
+  f <- spread(b2, type, val) %>% 
     mutate(any_serology = ifelse(IgG == "Positive" | IgM == "Positive", "Positive", NA)) %>% 
     right_join(f)
   
@@ -505,7 +523,7 @@ clean <- function(data) {
   
   f$`Serology blood test_Date of serology blood test` <- lubridate::parse_date_time(f$`Serology blood test_Date of serology blood test`, orders = "%d %m %y")
   f$`Serology blood test_Date of serology blood test_2` <- lubridate::parse_date_time(f$`Serology blood test_Date of serology blood test_2`, orders = "%d %m %y")
-
+  
   return(f)
 }
 
@@ -522,9 +540,9 @@ enrollment_summary <- function(data) {
   data %>% 
     filter(!(`Demography_Site Code` %in% c("", "00"))) %>% 
     count(Base_Provider,
-        Demography_Country,
-        `Demography_Site Code`,
-        sort = TRUE)
+          Demography_Country,
+          `Demography_Site Code`,
+          sort = TRUE)
 }
 
 enrollment_summary_detail <- function(data) {
