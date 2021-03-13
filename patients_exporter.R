@@ -245,6 +245,9 @@ convert <- function(file) {
   f[grepl("^;;;;;;;09/05/2004", f$line),]$line <- fixed
   f[f$line == fixed,]$fields <- stringr::str_count(fixed, ";")
   
+  # Di Sapio offline
+  f <- f[-which(f$line == ";;;;;;;29/02/1984;Secondary progressive MS (SPMS);7.5;01/11/2020;No;;;;;;No;;;Yes;Interferon;;;;;;;;;;13/03/2021 12:47;13/03/2021 12:47"),]
+  
   # name patients
   f <- mutate(f, pt = cumsum(pt)) %>%
     filter(!(fields == 0 & trimws(line) == ""))
