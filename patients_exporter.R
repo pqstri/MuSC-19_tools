@@ -499,7 +499,7 @@ clean <- function(data) {
            fsimpt = "COVID 19 - Sign and symptom_Date of first symptoms") %>% 
     mutate(fpsd = if_else(first == "Positive" | second == "Positive", 
                           ifelse(is.na(date), fsimpt, date), NA_character_, NA_character_)) %>% 
-    mutate(fpsd = as.Date(fpsd, format = "%d/%m/%y")) %>% 
+    mutate(fpsd = as.Date(fpsd, format = "%d/%m/%Y")) %>% 
     select(upid, fpsd)
   
   first_positive_swab_date <- f %>% 
@@ -511,7 +511,7 @@ clean <- function(data) {
     separate(k, c("k", "order"), sep = "_?(?=\\d)") %>% 
     spread(k, v, convert = T) %>%
     filter(first == "Positive" | second == "Positive") %>% 
-    mutate(date = as.Date(date, format = "%d/%m/%y")) %>% 
+    mutate(date = as.Date(date, format = "%d/%m/%Y")) %>% 
     group_by(upid) %>% 
     summarise(pos_fup_visit = min(date, na.rm = T)) %>%
     right_join(first_positive_swab_date) %>%
