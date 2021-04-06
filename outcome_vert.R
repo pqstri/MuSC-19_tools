@@ -10,6 +10,7 @@ timeZero_imputation <- function(f) {
   
   minimal <- select(j, symptoms_days, DOV = `Demography_Date of Visit`, items = contains("Sign and symptom_Other symptoms_"))
   
+  set.seed(1234)
   imp <- mice::mice(minimal, maxit = 0)
   predM = imp$predictorMatrix
   meth = imp$method
@@ -68,6 +69,7 @@ compute_outcomes <- function(f, debug = FALSE,
                              impute_time0 = TRUE) {
   
   require(lubridate)
+  f$`ORIGINAL_COVID 19 - Sign and symptom_Date of first symptoms` <- dmy(f$`COVID 19 - Sign and symptom_Date of first symptoms`)
   if (impute_time0) { f <- timeZero_imputation(f) }
   
   
@@ -86,7 +88,7 @@ compute_outcomes <- function(f, debug = FALSE,
                     com_hts = Comorbidity_HYPERTENSION,
                     com_cvd = `Comorbidity_CEREBROVASCULAR DISEASE`,
                     `ORIGINAL_Demography_Date of Visit` = `Demography_Date of Visit`,
-                    `ORIGINAL_COVID 19 - Sign and symptom_Date of first symptoms` = `COVID 19 - Sign and symptom_Date of first symptoms`,
+                    `ORIGINAL_COVID 19 - Sign and symptom_Date of first symptoms` = `ORIGINAL_COVID 19 - Sign and symptom_Date of first symptoms`,
                     `ORIGINAL_COVID19 - Diagnosis, Treatment_Mechanical ventilation` = `COVID19 - Diagnosis, Treatment_Mechanical ventilation`,
                     `ORIGINAL_COVID19 - Diagnosis, Treatment_If ventilation is mechanical, please specify` = `COVID19 - Diagnosis, Treatment_If ventilation is mechanical, please specify`,
                     `ORIGINAL_COVID19 - Diagnosis, Treatment_Hospitalization` = `COVID19 - Diagnosis, Treatment_Hospitalization`,
@@ -157,8 +159,8 @@ compute_outcomes <- function(f, debug = FALSE,
   
   # base
   base <- select(f, upid,
-                fsympt_date = `COVID 19 - Sign and symptom_Date of first symptoms`,
-                fvisit_date = `Demography_Date of Visit`) 
+                 fsympt_date = `COVID 19 - Sign and symptom_Date of first symptoms`,
+                 fvisit_date = `Demography_Date of Visit`) 
   
   base_vert <- select(base,  upid, `first sympthom` = fsympt_date, visit_date = fvisit_date) %>% 
     gather("update", "date", -upid, -visit_date)
@@ -186,7 +188,7 @@ compute_outcomes <- function(f, debug = FALSE,
     gather("update", "litter", hospitalization, icu) %>% 
     filter(litter) %>% 
     select(-litter)
-    
+  
   # one-shot info pneumoni
   imag <- select(f, upid, pneu_yn = `COVID 19 - Radiological data_PRESENCE OF PNEUMONIA`,
                  matches("^COVID 19 - Radiological.*date$"),
@@ -316,14 +318,14 @@ compute_outcomes <- function(f, debug = FALSE,
   
   
   pneum_db <- select(rmi, upid, pneumonia = `Presence of Pneumonia`, 
-         severity = `Severity of COVID`, visit_date) %>% 
+                     severity = `Severity of COVID`, visit_date) %>% 
     mutate(date = visit_date) %>% 
     gather("update", "val", pneumonia) %>% 
     filter(severity == "Severe" | severity == "Critical" | val == "Yes") %>%
     unite("details", val, severity, sep = " explicit pneumonia with severity: ")
   
   sev_db <- select(rmi, upid, `severe pneumonia` = `Presence of Pneumonia`, 
-                     severity = `Severity of COVID`, visit_date) %>% 
+                   severity = `Severity of COVID`, visit_date) %>% 
     mutate(date = visit_date) %>% 
     gather("update", "val", `severe pneumonia`) %>% 
     filter(severity == "Severe" | severity == "Critical") %>%
@@ -414,13 +416,13 @@ compute_outcomes <- function(f, debug = FALSE,
                                    TRUE                   ~ -9),
            sever_time = ifelse(sever_time <= 0 | is.na(sever_time), median(sever_time, na.rm = TRUE), sever_time)) %>% 
     select(everything(), -`severe pneumonia`, sever_date = `severe pneumonia`) %>% 
-  
+    
     # pneumonia
     rename(pneum_event = pneumonia_event) %>% 
     mutate(pneum_event = ifelse(!is.na(pneumonia) | !is.na(pneum_event), 1, 0),
            pneum_time  = case_when(!is.na(pneumonia) ~ (fsympt_date %--% pneumonia)/days(1),
-                                  !is.na(last_contact)   ~ (fsympt_date %--% last_contact)/days(1),
-                                  TRUE                   ~ -9),
+                                   !is.na(last_contact)   ~ (fsympt_date %--% last_contact)/days(1),
+                                   TRUE                   ~ -9),
            pneum_time = ifelse(pneum_time <= 0 | is.na(pneum_time), median(pneum_time, na.rm = TRUE), pneum_time)) %>% 
     select(everything(), -pneumonia, pneum_date = pneumonia) %>% 
     
@@ -432,12 +434,12 @@ compute_outcomes <- function(f, debug = FALSE,
                                    TRUE                   ~ -9),
            hospi_time = ifelse(hospi_time <= 0 | is.na(hospi_time), median(hospi_time, na.rm = TRUE), hospi_time)) %>% 
     select(everything(), -hospitalization, hospi_date = hospitalization) %>% 
-      
+    
     # icu
     mutate(icu_event = ifelse(!is.na(icu) | !is.na(icu_event), 1, 0),
            icu_time  = case_when(!is.na(icu) ~ (fsympt_date %--% icu)/days(1),
-                                   !is.na(last_contact)   ~ (fsympt_date %--% last_contact)/days(1),
-                                   TRUE                   ~ -9),
+                                 !is.na(last_contact)   ~ (fsympt_date %--% last_contact)/days(1),
+                                 TRUE                   ~ -9),
            icu_time = ifelse(icu_time <= 0 | is.na(icu_time), median(icu_time, na.rm = TRUE), icu_time)) %>% 
     select(everything(), -icu, icu_date = icu) %>% 
     
@@ -445,13 +447,13 @@ compute_outcomes <- function(f, debug = FALSE,
     mutate(icu_time   = ifelse(icu_time   > death_time, death_time, icu_time)) %>% 
     mutate(hospi_time = ifelse(hospi_time > icu_time,   icu_time,   hospi_time)) %>% 
     mutate(pneum_time = ifelse(pneum_time > sever_time, sever_time, pneum_time)) %>% 
-  
+    
     # composite 2
     mutate(composite2_event = ifelse(icu_event == 1 | death_event == 1, 1, 0)) %>% 
     rowwise() %>% 
     mutate(composite2_time  = ifelse(composite2_event == 1, 
-                                 min(icu_time, death_time),
-                                 max(icu_time, death_time))) %>% 
+                                     min(icu_time, death_time),
+                                     max(icu_time, death_time))) %>% 
     
     # composite 3
     mutate(composite3_event = ifelse(icu_event == 1 | 
@@ -545,7 +547,7 @@ compute_outcomes <- function(f, debug = FALSE,
   #   # none               = mixed[is.na(mixed$update,]$upid)
   #   ) + 
   #   guides(fill = FALSE)
-
+  
 }
 
 
