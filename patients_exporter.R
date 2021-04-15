@@ -246,6 +246,7 @@ convert <- function(file) {
   f[f$line == fixed,]$fields <- stringr::str_count(fixed, ";")
   
   # Di Sapio offline
+  f <- f[-which(grepl("^;;;;;;;29/02/1984;Secondary progressive MS", f$line)),]
   # f <- f[-which(f$line == ";;;;;;;29/02/1984;Secondary progressive MS (SPMS);7.5;01/11/2020;No;;;;;;No;;;Yes;Interferon;;;;;;;;;;13/03/2021 12:47;13/03/2021 12:47"),]
   
   # name patients
