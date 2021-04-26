@@ -20,7 +20,8 @@ library("tidyverse")
 #############################
 
 headers <- c("Provider;", ";;Demography", ";;MS history", ";;COVID 19 - ", 
-             ";;COVID19 - ", ";;Comorbidity", ";;Surgery;", ";;Comment", ";;Serology", ";;Vaccine")
+             ";;COVID19 - ", ";;Comorbidity", ";;Surgery;", ";;Comment", ";;Serology", 
+             ";;Vaccine", ";;Relapse during/post Covid")
 
 repeated_ev <- c(";;COVID 19 - Follow-up", ";;COVID 19 - Detailed treatment",
                  ";;COVID19 - Complication", ";;Comment")
