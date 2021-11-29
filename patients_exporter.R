@@ -21,7 +21,7 @@ library("tidyverse")
 
 headers <- c("Provider;", ";;Demography", ";;MS history", ";;COVID 19 - ", 
              ";;COVID19 - ", ";;Comorbidity", ";;Surgery;", ";;Comment", ";;Serology", 
-             ";;Vaccine", ";;Relapse during/post Covid")
+             ";;Vaccine;", ";;Relapse during/post Covid")
 
 repeated_ev <- c(";;COVID 19 - Follow-up", ";;COVID 19 - Detailed treatment",
                  ";;COVID19 - Complication", ";;Comment")
@@ -217,7 +217,10 @@ MPS_format <- list(
     "IgM_1"                  = "Serology blood test_IgM",
     "serology_date_2"        = "Serology blood test_Date of serology blood test_2",
     "IgG_2"                  = "Serology blood test_IgG_2",
-    "IgM_2"                  = "Serology blood test_IgM_2"
+    "IgM_2"                  = "Serology blood test_IgM_2",
+    "Vaccine_D1_date"        = "Vaccine_Date of first vaccine dose",
+    "Vaccine_D2_date"        = "Vaccine_Date of second vaccine dose",
+    "Vaccine_product"        = "Vaccine_Vaccine product"
   )
 )
 
@@ -528,6 +531,8 @@ clean <- function(data) {
   
   f$`Serology blood test_Date of serology blood test` <- lubridate::parse_date_time(f$`Serology blood test_Date of serology blood test`, orders = "%d %m %y")
   f$`Serology blood test_Date of serology blood test_2` <- lubridate::parse_date_time(f$`Serology blood test_Date of serology blood test_2`, orders = "%d %m %y")
+  
+  f$`Vaccine_Vaccine product` <- stringr::str_to_sentence(f$`Vaccine_Vaccine product`)
   
   return(f)
 }
