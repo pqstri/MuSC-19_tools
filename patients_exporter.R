@@ -220,7 +220,9 @@ MPS_format <- list(
     "IgM_2"                  = "Serology blood test_IgM_2",
     "Vaccine_D1_date"        = "Vaccine_Date of first vaccine dose",
     "Vaccine_D2_date"        = "Vaccine_Date of second vaccine dose",
-    "Vaccine_product"        = "Vaccine_Vaccine product"
+    "Vaccine_product"        = "Vaccine_Vaccine product",
+    "city"                   = "Demography_Place of living (or residence). CITY",
+    "zip_code"               = "Demography_Place of living (or residence). ZIP CODE"
   )
 )
 
@@ -264,14 +266,14 @@ convert <- function(file) {
   b1 <- f %>% group_by(pt) %>% 
     mutate(block = cumsum(is_header)) %>% 
     group_by(pt, block)
-    
-    # \n bug
+  
+  # \n bug
   b2 <-  mutate(b1, newline = str_count(line, "\"") %% 2) %>% 
     mutate(newline_open = cumsum(newline) %% 2) %>% 
     mutate(newline = as.numeric(newline == 1 | newline_open == 1)) %>% 
     group_by(pt, block, is_header, newline)
-    
-    # continue
+  
+  # continue
   b3 <-  group_by(b2, pt, block) %>% 
     mutate(sheets = n(),
            any_newline = any(newline == 1),
@@ -281,10 +283,10 @@ convert <- function(file) {
   
   b5 <- group_by(b4, pt, block) %>%
     mutate(multiplier = ifelse(is_header & sheets > 2, sheets-1-newline_penalty, 1))
-    
+  
   f <-  uncount(b5, multiplier) %>%  ungroup()
   
-
+  
   # condensate info
   f <- group_by(f, pt, is_header) %>%
     summarise(line = paste(line, collapse = ";"),
@@ -358,7 +360,7 @@ convert <- function(file) {
         cat("\nPotential data loss on these pts:", ., "\n"); .} %>% 
     filter(constrains | is.na(constrains)) %>% 
     filter(!blank)
-    
+  
   b4 <- fill(b3, title) %>% 
     mutate(title = ifelse(is.na(title), "Base", title))
   
@@ -372,7 +374,7 @@ convert <- function(file) {
   b2 <- group_by(b1, pt, variable) %>%
     mutate(multiple = row_number()) %>% 
     ungroup()
-    
+  
   f <- mutate(b2, variable = ifelse(multiple > 1, paste(variable, multiple, sep = "_"), variable)) %>%
     select(-position, -multiple) %>% 
     tidyr::spread(variable, value)
@@ -412,7 +414,7 @@ clean <- function(data) {
   # COVID 19 - Sign and symptom_Other symptoms
   dummification_size <- 20
   b1 <- separate(f, `COVID 19 - Sign and symptom_Other symptoms`,
-                into = as.character(1:dummification_size), sep = ",") %>% 
+                 into = as.character(1:dummification_size), sep = ",") %>% 
     select(upid, as.character(1:dummification_size)) %>% 
     gather("position", "symptom", -upid)
   
@@ -420,7 +422,7 @@ clean <- function(data) {
     mutate(symptom = trimws(symptom)) %>% 
     mutate(symptom = paste("COVID 19 - Sign and symptom_Other symptoms", symptom, sep = "_")) %>% 
     mutate(position = 1)
-    
+  
   b3 <- spread(b2, symptom, position) %>% 
     right_join(f)
   
@@ -428,7 +430,7 @@ clean <- function(data) {
   
   # COVID 19 - Sign and symptom_Signs of infection
   b1 <- separate(f, `COVID 19 - Sign and symptom_Signs of infection`,
-                into = as.character(1:10), sep = ",") %>% 
+                 into = as.character(1:10), sep = ",") %>% 
     select(upid, as.character(1:10)) %>% 
     gather("position", "symptom", -upid)
   
@@ -443,7 +445,7 @@ clean <- function(data) {
   
   # COVID19 - Diagnosis, Treatment_Treatments
   b1 <- separate(f, `COVID19 - Diagnosis, Treatment_Treatments`,
-                into = as.character(1:10), sep = ",") %>% 
+                 into = as.character(1:10), sep = ",") %>% 
     select(upid, as.character(1:10)) %>% 
     gather("position", "choice", -upid)
   
@@ -451,7 +453,7 @@ clean <- function(data) {
     mutate(choice = trimws(choice)) %>% 
     mutate(choice = paste("COVID19 - Diagnosis, Treatment_Treatments", choice, sep = "_")) %>% 
     mutate(position = 1)
-    
+  
   f <- spread(b2, choice, position) %>% 
     right_join(f) %>% 
     mutate_at(vars(contains("COVID19 - Diagnosis, Treatment_Treatments")), ~ replace_na(., 0))
@@ -471,7 +473,7 @@ clean <- function(data) {
     summarise(val = case_when(any(val == "Positive")     ~ "Positive",
                               any(val == "Negative")     ~ "Negative",
                               any(val == "Not executed") ~ "Not executed"))
-    
+  
   f <- spread(b2, n_swab, val) %>%
     ungroup() %>%
     right_join(f)
