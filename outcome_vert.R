@@ -333,7 +333,7 @@ compute_outcomes <- function(f, debug = FALSE,
   
   
   last_fup_vert <- f %>% 
-    select(-coontains("Comment_Comments")) %>% 
+    select(-contains("Comment_Comments")) %>% 
     select_if(is_datable) %>% 
     bind_cols(select(f, upid)) %>% 
     gather("last contact", "date", -upid) %>% 
