@@ -332,7 +332,9 @@ compute_outcomes <- function(f, debug = FALSE,
     unite("details", val, severity, sep = " explicit pneumonia with severity: ")
   
   
-  last_fup_vert <- select_if(f, is_datable) %>% 
+  last_fup_vert <- f %>% 
+    select(-coontains("Comment_Comments")) %>% 
+    select_if(is_datable) %>% 
     bind_cols(select(f, upid)) %>% 
     gather("last contact", "date", -upid) %>% 
     gather("update", "details", `last contact`) %>% 
@@ -549,7 +551,6 @@ compute_outcomes <- function(f, debug = FALSE,
   #   guides(fill = FALSE)
   
 }
-
 
 
 
