@@ -361,6 +361,7 @@ compute_outcomes <- function(f, debug = FALSE,
   
   
   all_vert <- purrr::map(all_dbs, ~ mutate_if(., is_datable, lubridate::dmy)) %>% 
+    purrr::map(~ mutate_at(., vars(matches("date")), lubridate::dmy)) %>% 
     purrr::reduce(bind_rows) %>% 
     arrange(upid, date) %>% 
     mutate_if(is_datable, lubridate::dmy)
@@ -551,6 +552,5 @@ compute_outcomes <- function(f, debug = FALSE,
   #   guides(fill = FALSE)
   
 }
-
 
 
